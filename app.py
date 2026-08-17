@@ -620,7 +620,17 @@ def scores_delete(score_id):
 @app.route("/dashboard")
 @parent_required
 def parent_dashboard():
-    return render_template("parent_dashboard.html")
+    score_rows = scores.list_scores(parent_id=g.user.id)
+    subject_trends = scores.build_subject_trends(score_rows)
+    overall_avg = None
+    if subject_trends:
+        overall_avg = round(sum(t["latest_pct"] for t in subject_trends) / len(subject_trends), 1)
+    return render_template(
+        "parent_dashboard.html",
+        score_rows=score_rows,
+        subject_trends=subject_trends,
+        overall_avg=overall_avg,
+    )
 
 
 @app.errorhandler(403)

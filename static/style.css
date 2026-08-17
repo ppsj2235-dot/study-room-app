@@ -357,6 +357,114 @@ input[type="file"] {
   margin-bottom: 8px;
 }
 
+/* Parent score dashboard */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.kpi-card {
+  background: #fafbfc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.kpi-card .kpi-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.kpi-card .kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.kpi-card .kpi-value small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.subject-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.subject-trend-card {
+  background: #fafbfc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px 10px;
+}
+
+.subject-trend-card.flagged {
+  border-color: #f3c9b6;
+  background: #fff8f5;
+}
+
+.subject-trend-card .std-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.subject-trend-card .std-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.subject-trend-card .std-score {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.subject-trend-card.flagged .std-score {
+  color: #b3521f;
+}
+
+.subject-trend-card svg {
+  display: block;
+  width: 100%;
+  height: 56px;
+  margin: 6px 0 2px;
+}
+
+.delta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.delta-badge.up { color: #0ca30c; background: #e8f7e8; }
+.delta-badge.down { color: #d03b3b; background: #fbeaea; }
+.delta-badge.flat { color: var(--muted); background: #eef0f4; }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #eef0f4;
+  color: var(--muted);
+}
+
+.row-flag {
+  color: #b3521f;
+  font-weight: 600;
+}
+
 @media (max-width: 480px) {
   .form-grid { grid-template-columns: 1fr; }
   .table { font-size: 13px; }

@@ -95,3 +95,62 @@ def update_score(score_id, parent_id, exam_type, subject, score, max_score, exam
 def delete_score(score_id):
     with db_cursor(commit=True) as cur:
         cur.execute("DELETE FROM exam_scores WHERE id = ?", (score_id,))
+
+
+def _sort_key(row):
+    # exam_date가 없으면 등록 순서(created_at)로 대체 정렬
+    return (row.exam_date or "", row.created_at or "")
+
+
+def build_subject_trends(score_rows, flag_below_pct=70):
+    """학부모 화면용: 과목별로 묶어서 시간순 추이(그래프용 좌표)를 만들어줍니다.
+
+    과목이 '수학' 하나뿐이어도, 방학 특강처럼 과목이 늘어나도 그대로 동작합니다.
+    """
+    groups = {}
+    order = []
+    for row in score_rows:
+        if row.subject not in groups:
+            groups[row.subject] = []
+            order.append(row.subject)
+        groups[row.subject].append(row)
+
+    trends = []
+    for subject in order:
+        rows_sorted = sorted(groups[subject], key=_sort_key)
+        n = len(rows_sorted)
+        points = []
+        for i, row in enumerate(rows_sorted):
+            pct = (row.score / row.max_score * 100) if row.max_score else 0
+            x = 10 if n <= 1 else round(10 + (280 * i / (n - 1)), 1)
+            y = round(58 - (pct / 100 * 48), 1)
+            points.append(
+                {
+                    "x": x,
+                    "y": y,
+                    "pct": round(pct, 1),
+                    "score_display": row.score_display,
+                    "exam_type": row.exam_type,
+                    "exam_date": row.exam_date,
+                }
+            )
+
+        latest_row = rows_sorted[-1]
+        latest_pct = points[-1]["pct"]
+        prev_pct = points[-2]["pct"] if n >= 2 else None
+        delta = None if prev_pct is None else round(latest_pct - prev_pct, 1)
+        flagged = latest_pct < flag_below_pct or (delta is not None and delta < 0)
+
+        trends.append(
+            {
+                "subject": subject,
+                "count": n,
+                "points": points,
+                "polyline": " ".join(f'{p["x"]},{p["y"]}' for p in points),
+                "latest": latest_row,
+                "latest_pct": latest_pct,
+                "delta": delta,
+                "flagged": flagged,
+            }
+        )
+    return trends
