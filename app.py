@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 
 import models
 import models_newsletter as nl
+import models_scores as scores
 from content_bank import suggest_director_message, suggest_quote
 from db import init_db
 from newsletter_render import render_flyer_html, render_flyer_png
@@ -444,6 +445,176 @@ def newsletter_download(newsletter_id):
         as_attachment=True,
         download_name=download_name,
     )
+
+
+def _parse_score_form():
+    errors = []
+
+    parent_id = request.form.get("parent_id", "").strip()
+    parent = None
+    if not parent_id:
+        errors.append("학생(학부모 계정)을 선택해주세요.")
+    else:
+        try:
+            parent_id = int(parent_id)
+            parent = models.get_user_by_id(parent_id)
+        except ValueError:
+            parent_id = None
+        if not parent or parent.role != "parent":
+            errors.append("선택한 학생 계정을 찾을 수 없습니다.")
+
+    exam_type = request.form.get("exam_type", "").strip()
+    if exam_type not in scores.EXAM_TYPES:
+        errors.append("시험 종류를 선택해주세요.")
+
+    subject = request.form.get("subject", "").strip()
+    if not subject:
+        errors.append("과목을 입력해주세요.")
+
+    score_raw = request.form.get("score", "").strip()
+    max_score_raw = request.form.get("max_score", "").strip() or "100"
+    score_val = None
+    max_score_val = None
+    try:
+        score_val = float(score_raw)
+    except ValueError:
+        errors.append("점수는 숫자로 입력해주세요.")
+    try:
+        max_score_val = float(max_score_raw)
+    except ValueError:
+        errors.append("만점은 숫자로 입력해주세요.")
+    if score_val is not None and max_score_val is not None and score_val > max_score_val:
+        errors.append("점수가 만점보다 클 수 없습니다.")
+
+    exam_date = request.form.get("exam_date", "").strip() or None
+    note = request.form.get("note", "").strip() or None
+
+    return {
+        "errors": errors,
+        "parent_id": parent_id if isinstance(parent_id, int) else None,
+        "exam_type": exam_type,
+        "subject": subject,
+        "score": score_val,
+        "max_score": max_score_val,
+        "exam_date": exam_date,
+        "note": note,
+    }
+
+
+@app.route("/admin/scores")
+@admin_required
+def scores_list():
+    parent_id = request.args.get("parent_id", type=int)
+    parents = models.list_parents()
+    score_rows = scores.list_scores(parent_id=parent_id)
+    return render_template(
+        "admin_scores_list.html",
+        scores=score_rows,
+        parents=parents,
+        selected_parent_id=parent_id,
+        exam_types=scores.EXAM_TYPES,
+    )
+
+
+@app.route("/admin/scores/new", methods=["GET", "POST"])
+@admin_required
+def scores_new():
+    parents = models.list_parents()
+
+    if request.method == "POST":
+        check_csrf()
+        data = _parse_score_form()
+        if data["errors"]:
+            for e in data["errors"]:
+                flash(e, "error")
+            return render_template(
+                "admin_scores_form.html",
+                parents=parents,
+                score=None,
+                is_new=True,
+                exam_types=scores.EXAM_TYPES,
+                subject_suggestions=scores.SUBJECT_SUGGESTIONS,
+                form_data=data,
+            )
+        scores.create_score(
+            parent_id=data["parent_id"],
+            exam_type=data["exam_type"],
+            subject=data["subject"],
+            score=data["score"],
+            max_score=data["max_score"],
+            exam_date=data["exam_date"],
+            note=data["note"],
+            created_by=g.user.id,
+        )
+        flash("성적이 등록되었습니다.", "success")
+        return redirect(url_for("scores_list"))
+
+    default_parent_id = request.args.get("parent_id", type=int)
+    return render_template(
+        "admin_scores_form.html",
+        parents=parents,
+        score=None,
+        is_new=True,
+        exam_types=scores.EXAM_TYPES,
+        subject_suggestions=scores.SUBJECT_SUGGESTIONS,
+        form_data={"parent_id": default_parent_id} if default_parent_id else None,
+    )
+
+
+@app.route("/admin/scores/<int:score_id>/edit", methods=["GET", "POST"])
+@admin_required
+def scores_edit(score_id):
+    score = scores.get_score(score_id)
+    if not score:
+        abort(404)
+    parents = models.list_parents()
+
+    if request.method == "POST":
+        check_csrf()
+        data = _parse_score_form()
+        if data["errors"]:
+            for e in data["errors"]:
+                flash(e, "error")
+            return render_template(
+                "admin_scores_form.html",
+                parents=parents,
+                score=score,
+                is_new=False,
+                exam_types=scores.EXAM_TYPES,
+                subject_suggestions=scores.SUBJECT_SUGGESTIONS,
+                form_data=data,
+            )
+        scores.update_score(
+            score_id,
+            parent_id=data["parent_id"],
+            exam_type=data["exam_type"],
+            subject=data["subject"],
+            score=data["score"],
+            max_score=data["max_score"],
+            exam_date=data["exam_date"],
+            note=data["note"],
+        )
+        flash("성적이 수정되었습니다.", "success")
+        return redirect(url_for("scores_list"))
+
+    return render_template(
+        "admin_scores_form.html",
+        parents=parents,
+        score=score,
+        is_new=False,
+        exam_types=scores.EXAM_TYPES,
+        subject_suggestions=scores.SUBJECT_SUGGESTIONS,
+        form_data=None,
+    )
+
+
+@app.route("/admin/scores/<int:score_id>/delete", methods=["POST"])
+@admin_required
+def scores_delete(score_id):
+    check_csrf()
+    scores.delete_score(score_id)
+    flash("성적이 삭제되었습니다.", "success")
+    return redirect(url_for("scores_list"))
 
 
 @app.route("/dashboard")

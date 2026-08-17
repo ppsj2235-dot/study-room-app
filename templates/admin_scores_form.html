@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ '성적 등록' if is_new else '성적 수정' }} - {{ academy_name }}{% endblock %}
+{% block content %}
+{% set v = form_data or score %}
+<div class="nl-header-row">
+  <h1 class="page-title">{{ '새 성적 등록' if is_new else '성적 수정' }}</h1>
+  <div class="nl-header-actions">
+    <a class="btn" href="{{ url_for('scores_list') }}">목록으로</a>
+  </div>
+</div>
+
+<section class="card">
+  <form method="post" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <label>학생
+      <select name="parent_id" required>
+        <option value="">선택해주세요</option>
+        {% for p in parents %}
+        <option value="{{ p.id }}" {{ 'selected' if v and v.parent_id == p.id else '' }}>
+          {{ p.student_name or '(학생명 미입력)' }} — {{ p.name }} ({{ p.username }})
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>시험 종류
+      <select name="exam_type" required>
+        <option value="">선택해주세요</option>
+        {% for et in exam_types %}
+        <option value="{{ et }}" {{ 'selected' if v and v.exam_type == et else '' }}>{{ et }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>과목
+      <input type="text" name="subject" list="subject-suggestions"
+             value="{{ v.subject if v and v.subject else '수학' }}" required />
+      <datalist id="subject-suggestions">
+        {% for s in subject_suggestions %}
+        <option value="{{ s }}"></option>
+        {% endfor %}
+      </datalist>
+    </label>
+
+    <label>응시일 <span class="optional">(선택)</span>
+      <input type="date" name="exam_date" value="{{ v.exam_date if v and v.exam_date else '' }}" />
+    </label>
+
+    <label>점수
+      <input type="number" step="0.1" name="score" value="{{ v.score if v and v.score is not none else '' }}" required />
+    </label>
+
+    <label>만점
+      <input type="number" step="0.1" name="max_score" value="{{ v.max_score if v and v.max_score is not none else 100 }}" required />
+    </label>
+
+    <label style="grid-column:1 / -1;">비고 <span class="optional">(선택, 예: 보충 필요 / 학원명 등)</span>
+      <textarea name="note" rows="2">{{ v.note if v and v.note else '' }}</textarea>
+    </label>
+
+    <button type="submit" class="btn btn-primary">{{ '등록하기' if is_new else '저장하기' }}</button>
+  </form>
+</section>
+
+<p class="muted">
+  과목은 기본값이 "수학"이에요. 방학 때 국어 특강처럼 다른 과목 시험을 등록하고 싶으면
+  과목 칸에 원하는 이름을 직접 입력하시면 됩니다 (예: 국어(방학특강)).
+</p>
+{% endblock %}

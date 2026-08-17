@@ -78,10 +78,17 @@
   <a class="btn btn-primary" href="{{ url_for('newsletter_list') }}">알림장 관리로 이동</a>
 </section>
 
+<section class="card">
+  <h2>성적 관리</h2>
+  <p class="muted">중간고사·기말고사·월말고사 점수를 학생별로 등록/수정합니다. 이 화면은 관리자만 볼 수 있어요.</p>
+  <a class="btn btn-primary" href="{{ url_for('scores_list') }}">성적 관리로 이동</a>
+</section>
+
 <section class="card card-muted">
   <h2>다음 단계 (준비 중)</h2>
   <p class="muted">
-    학부모별 학습 평가표 업로드 기능은 다음 단계에서 이어서 개발할 예정입니다.
+    학부모별 학습 평가표(이미지) 업로드 기능과, 학부모 화면에서 성적을 확인하는 기능은
+    다음 단계에서 이어서 개발할 예정입니다.
   </p>
 </section>
 {% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}성적 관리 - {{ academy_name }}{% endblock %}
+{% block content %}
+<div class="nl-header-row">
+  <h1 class="page-title">성적 관리</h1>
+  <div class="nl-header-actions">
+    <a class="btn" href="{{ url_for('admin_dashboard') }}">관리자 홈으로</a>
+    <a class="btn btn-primary" href="{{ url_for('scores_new') }}">새 성적 등록</a>
+  </div>
+</div>
+<p class="muted" style="margin-top:-8px;">
+  이 화면은 관리자만 볼 수 있어요. 중간고사·기말고사·월말고사 점수를 학생별로 등록/수정/삭제합니다.
+</p>
+
+<section class="card">
+  <h2>학생별로 보기</h2>
+  <form method="get" action="{{ url_for('scores_list') }}" class="form-grid">
+    <label>학생 선택
+      <select name="parent_id" onchange="this.form.submit()">
+        <option value="">전체 학생</option>
+        {% for p in parents %}
+        <option value="{{ p.id }}" {{ 'selected' if selected_parent_id == p.id else '' }}>
+          {{ p.student_name or '(학생명 미입력)' }} — {{ p.name }} ({{ p.username }})
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <noscript><button type="submit" class="btn">보기</button></noscript>
+  </form>
+</section>
+
+<section class="card">
+  {% if scores %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>학생</th>
+        <th>시험 종류</th>
+        <th>과목</th>
+        <th>점수</th>
+        <th>응시일</th>
+        <th>비고</th>
+        <th>수정</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in scores %}
+      <tr>
+        <td>{{ s.student_name or '-' }} <span class="muted">({{ s.parent_name }})</span></td>
+        <td>{{ s.exam_type }}</td>
+        <td>{{ s.subject }}</td>
+        <td>{{ s.score_display }}</td>
+        <td>{{ s.exam_date or '-' }}</td>
+        <td>{{ s.note or '-' }}</td>
+        <td><a href="{{ url_for('scores_edit', score_id=s.id) }}">수정</a></td>
+        <td>
+          <form method="post" action="{{ url_for('scores_delete', score_id=s.id) }}" class="inline-form"
+                onsubmit="return confirm('이 성적 기록을 삭제할까요?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-small btn-danger">삭제</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">아직 등록된 성적이 없습니다. "새 성적 등록"으로 시작해보세요.</p>
+  {% endif %}
+</section>
+{% endblock %}

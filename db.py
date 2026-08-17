@@ -87,3 +87,21 @@ def init_db():
             )
             """
         )
+        # 중간고사 / 기말고사 / 월말고사 성적 (숫자 점수) - 관리자만 등록/수정 가능
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS exam_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parent_id INTEGER NOT NULL REFERENCES users(id),
+                exam_type TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                score REAL NOT NULL,
+                max_score REAL NOT NULL DEFAULT 100,
+                exam_date TEXT,
+                note TEXT,
+                created_by INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
