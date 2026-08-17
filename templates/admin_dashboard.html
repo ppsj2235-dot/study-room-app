@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}관리자 대시보드 - {{ academy_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">관리자 대시보드</h1>
+
+<section class="card">
+  <h2>학부모 계정 발급</h2>
+  <p class="muted">학부모가 로그인할 아이디와 비밀번호를 직접 만들어 발급해주세요.</p>
+  <form method="post" action="{{ url_for('create_parent') }}" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <label>
+      아이디
+      <input type="text" name="username" required />
+    </label>
+    <label>
+      비밀번호
+      <input type="text" name="password" required minlength="4" placeholder="4자 이상" />
+    </label>
+    <label>
+      학부모 이름
+      <input type="text" name="name" required />
+    </label>
+    <label>
+      학생(자녀) 이름 <span class="optional">(선택)</span>
+      <input type="text" name="student_name" />
+    </label>
+    <button type="submit" class="btn btn-primary">계정 생성</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>학부모 계정 목록 <span class="count">({{ parents|length }}명)</span></h2>
+  {% if parents %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>아이디</th>
+        <th>학부모 이름</th>
+        <th>학생 이름</th>
+        <th>가입일</th>
+        <th>비밀번호 재설정</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in parents %}
+      <tr>
+        <td>{{ p.username }}</td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.student_name or '-' }}</td>
+        <td>{{ p.created_at }}</td>
+        <td>
+          <form method="post" action="{{ url_for('reset_parent_password', user_id=p.id) }}" class="inline-form reset-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="text" name="new_password" placeholder="새 비밀번호" minlength="4" required />
+            <button type="submit" class="btn btn-small">재설정</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="{{ url_for('delete_parent', user_id=p.id) }}" class="inline-form"
+                onsubmit="return confirm('{{ p.name }}({{ p.username }}) 계정을 삭제할까요?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-small btn-danger">삭제</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">아직 등록된 학부모 계정이 없습니다.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>월간 알림장</h2>
+  <p class="muted">달력, 공지사항, 수강료 안내 등이 담긴 월간 알림장을 만들고 이미지로 다운로드할 수 있습니다.</p>
+  <a class="btn btn-primary" href="{{ url_for('newsletter_list') }}">알림장 관리로 이동</a>
+</section>
+
+<section class="card card-muted">
+  <h2>다음 단계 (준비 중)</h2>
+  <p class="muted">
+    학부모별 학습 평가표 업로드 기능은 다음 단계에서 이어서 개발할 예정입니다.
+  </p>
+</section>
+{% endblock %}

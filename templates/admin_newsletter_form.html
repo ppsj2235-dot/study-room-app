@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}{{ year }}년 {{ month }}월 알림장 - {{ academy_name }}{% endblock %}
+{% block content %}
+
+<div class="nl-header-row">
+  <h1 class="page-title">{{ year }}년 {{ month }}월 알림장</h1>
+  <div class="nl-header-actions">
+    <a class="btn" href="{{ url_for('newsletter_list') }}">목록으로</a>
+    <a class="btn btn-primary" href="{{ url_for('newsletter_download', newsletter_id=newsletter_id) }}">이미지로 다운로드</a>
+  </div>
+</div>
+
+<section class="card">
+  <h2>미리보기</h2>
+  <p class="muted">디자인은 고정되어 있고, 아래 항목들만 수정하면 이 미리보기와 다운로드 이미지에 바로 반영돼요. (저장 후 새로고침됩니다)</p>
+  <div class="nl-preview-frame">
+    <iframe src="{{ url_for('newsletter_preview', newsletter_id=newsletter_id) }}" width="1024" height="1536"></iframe>
+  </div>
+</section>
+
+<form method="post" action="{{ url_for('newsletter_update', newsletter_id=newsletter_id) }}" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+  <section class="card">
+    <h2>공지사항 <span class="optional">(최대 5개, 빈 칸은 표시되지 않아요)</span></h2>
+    <div class="stack-fields">
+      {% for i in range(1, 6) %}
+      <input type="text" name="notice_{{ i }}" value="{{ newsletter.notices[i-1] if newsletter.notices|length >= i else '' }}" placeholder="공지 {{ i }}" />
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>수강료 납부 안내</h2>
+    <div class="form-grid">
+      <label>납부 기간
+        <input type="text" name="tuition_period" value="{{ newsletter.tuition.period }}" placeholder="예: 매월 1일 ~ 5일" />
+      </label>
+      <label>납부 계좌
+        <input type="text" name="tuition_account" value="{{ newsletter.tuition.account }}" placeholder="예: OO은행 000-0000-0000 (예금주: 000)" />
+      </label>
+    </div>
+    <label style="margin-top:14px;">안내 문구
+      <textarea name="tuition_note" rows="3" placeholder="예: OO페이로 납부하실 수 있습니다.">{{ newsletter.tuition.note }}</textarea>
+    </label>
+    <div class="form-grid" style="margin-top:14px;">
+      <label>QR 코드 이미지 <span class="optional">(선택)</span>
+        <input type="file" name="qr_image" accept="image/*" />
+      </label>
+      <label>QR 자리에 표시할 문구 <span class="optional">(이미지 없을 때)</span>
+        <input type="text" name="tuition_qr_label" value="{{ newsletter.tuition.qr_label }}" placeholder="예: 계좌 QR코드" />
+      </label>
+    </div>
+    {% if newsletter.tuition.qr_image_path %}
+    <label class="checkbox-label" style="margin-top:10px;">
+      <input type="checkbox" name="remove_qr_image" value="1" /> 업로드된 QR 이미지 삭제
+    </label>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>성장 포인트 <span class="optional">(구성은 고정, 문구만 수정)</span></h2>
+    {% for i in range(1, 4) %}
+    <div class="form-grid" style="margin-top:{{ '0' if i == 1 else '14px' }};">
+      <label>제목 {{ i }}
+        <input type="text" name="growth_title_{{ i }}" value="{{ newsletter.growth_items[i-1].title if newsletter.growth_items|length >= i else '' }}" />
+      </label>
+      <label>내용 {{ i }}
+        <input type="text" name="growth_desc_{{ i }}" value="{{ newsletter.growth_items[i-1].desc if newsletter.growth_items|length >= i else '' }}" />
+      </label>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>학습 TIP <span class="optional">(3개, 문구만 수정)</span></h2>
+    <div class="stack-fields">
+      {% for i in range(1, 4) %}
+      <input type="text" name="tip_{{ i }}" value="{{ newsletter.tip_items[i-1] if newsletter.tip_items|length >= i else '' }}" />
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>원장 한마디 <span class="optional">(계절/시기에 맞춰 자동 추천, 수정 가능)</span></h2>
+    <textarea name="director_message" rows="5">{{ newsletter.director_message }}</textarea>
+    <button type="submit" formaction="{{ url_for('newsletter_regenerate', newsletter_id=newsletter_id, field='director') }}" formnovalidate class="btn btn-small" style="margin-top:10px;">다른 문구 추천받기</button>
+  </section>
+
+  <section class="card">
+    <h2>이번 달 명언 <span class="optional">(매달 자동 추천, 수정 가능)</span></h2>
+    <div class="form-grid">
+      <label>명언
+        <input type="text" name="quote_text" value="{{ newsletter.quote_text }}" />
+      </label>
+      <label>말한 사람
+        <input type="text" name="quote_author" value="{{ newsletter.quote_author }}" />
+      </label>
+    </div>
+    <button type="submit" formaction="{{ url_for('newsletter_regenerate', newsletter_id=newsletter_id, field='quote') }}" formnovalidate class="btn btn-small" style="margin-top:10px;">다른 명언 추천받기</button>
+  </section>
+
+  <section class="card">
+    <h2>가정에서 부탁드립니다 <span class="optional">(구성은 고정, 문구만 수정)</span></h2>
+    {% for i in range(1, 5) %}
+    <div class="form-grid" style="margin-top:{{ '0' if i == 1 else '14px' }};">
+      <label>제목 {{ i }}
+        <input type="text" name="home_title_{{ i }}" value="{{ newsletter.home_items[i-1].title if newsletter.home_items|length >= i else '' }}" />
+      </label>
+      <label>내용 {{ i }}
+        <input type="text" name="home_desc_{{ i }}" value="{{ newsletter.home_items[i-1].desc if newsletter.home_items|length >= i else '' }}" />
+      </label>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>문의 및 안내</h2>
+    <div class="form-grid">
+      <label>전화번호
+        <input type="text" name="contact_phone" value="{{ newsletter.contact.phone }}" />
+      </label>
+      <label>주소
+        <input type="text" name="contact_address" value="{{ newsletter.contact.address }}" />
+      </label>
+    </div>
+    <label style="margin-top:14px;">안내 문구
+      <textarea name="contact_note" rows="2">{{ newsletter.contact.note }}</textarea>
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>{{ month }}월 달력 보정 <span class="optional">(선택, 자동 계산된 달력을 특정 날짜만 바꾸고 싶을 때)</span></h2>
+    <p class="muted">기본 규칙: 월·화·수·목은 운영일(초록), 금·토·일과 공휴일은 휴무일(빨강)로 자동 표시됩니다.</p>
+    <div class="form-grid">
+      <label>추가로 휴무 처리할 날짜 <span class="optional">(쉼표로 구분, 예: 15, 22)</span>
+        <input type="text" name="extra_closed_days" value="{{ newsletter.extra_closed_days|join(', ') }}" />
+      </label>
+      <label>추가로 운영 처리할 날짜 <span class="optional">(쉼표로 구분)</span>
+        <input type="text" name="extra_open_days" value="{{ newsletter.extra_open_days|join(', ') }}" />
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>기본 정보</h2>
+    <div class="form-grid">
+      <label>공부방 이름
+        <input type="text" name="academy_name" value="{{ newsletter.academy_name }}" />
+      </label>
+      <label>타이틀 아래 문구
+        <input type="text" name="tagline" value="{{ newsletter.tagline }}" />
+      </label>
+    </div>
+  </section>
+
+  <div class="nl-save-bar">
+    <button type="submit" class="btn btn-primary btn-block">저장하기</button>
+  </div>
+</form>
+{% endblock %}

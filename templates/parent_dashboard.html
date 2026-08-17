@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}학부모 페이지 - {{ academy_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">
+  {{ current_user.name }}님{% if current_user.student_name %} ({{ current_user.student_name }} 학부모님){% endif %}, 환영합니다
+</h1>
+
+<section class="card card-muted">
+  <h2>학습 평가표</h2>
+  <p class="muted">
+    아직 등록된 학습 평가표가 없습니다.<br />
+    선생님이 평가표를 업로드하시면 이 화면에서 확인 및 다운로드하실 수 있도록 다음 단계에서 개발할 예정입니다.
+  </p>
+</section>
+
+<section class="card card-muted">
+  <h2>알림장</h2>
+  <p class="muted">알림장 다운로드 기능도 다음 단계에서 추가될 예정입니다.</p>
+</section>
+{% endblock %}

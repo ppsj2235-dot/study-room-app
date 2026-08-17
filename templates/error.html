@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} - {{ academy_name }}{% endblock %}
+{% block content %}
+<div class="error-wrap">
+  <h1>{{ code }}</h1>
+  <p>{{ message }}</p>
+  <a class="btn btn-primary" href="{{ url_for('index') }}">홈으로</a>
+</div>
+{% endblock %}

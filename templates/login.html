@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}로그인 - {{ academy_name }}{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card">
+    <h1 class="login-title">{{ academy_name }}</h1>
+    <p class="login-subtitle">발급받은 아이디와 비밀번호로 로그인해주세요.</p>
+
+    <form method="post" action="{{ url_for('login') }}" class="login-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <label>
+        아이디
+        <input type="text" name="username" autocomplete="username" required autofocus />
+      </label>
+      <label>
+        비밀번호
+        <input type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">로그인</button>
+    </form>
+
+    <p class="login-help">
+      계정이 없으신가요? 담당 선생님(관리자)에게 문의해 아이디와 비밀번호를 발급받아주세요.
+    </p>
+  </div>
+</div>
+{% endblock %}

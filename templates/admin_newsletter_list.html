@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}알림장 관리 - {{ academy_name }}{% endblock %}
+{% block content %}
+<div class="nl-header-row">
+  <h1 class="page-title">월간 알림장</h1>
+</div>
+
+<section class="card">
+  <h2>새 알림장 만들기</h2>
+  <p class="muted">연도와 월을 고르면 달력은 자동으로 만들어지고, 공지사항·수강료 안내 등은 이전 알림장 내용을 이어받은 초안이 생성됩니다.</p>
+  <form method="get" action="{{ url_for('newsletter_new') }}" class="form-grid">
+    <label>
+      연도
+      <select name="year">
+        {% for y in year_options %}
+        <option value="{{ y }}" {{ 'selected' if y == default_year else '' }}>{{ y }}년</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      월
+      <select name="month">
+        {% for m in range(1, 13) %}
+        <option value="{{ m }}" {{ 'selected' if m == default_month else '' }}>{{ m }}월</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">만들기</button>
+  </form>
+</section>
+
+<section class="card">
+  {% if newsletters %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>연도</th>
+        <th>월</th>
+        <th>마지막 수정</th>
+        <th>미리보기 / 편집</th>
+        <th>다운로드</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for n in newsletters %}
+      <tr>
+        <td>{{ n.year }}</td>
+        <td>{{ n.month }}월</td>
+        <td>{{ n.updated_at }}</td>
+        <td><a href="{{ url_for('newsletter_edit', newsletter_id=n.id) }}">편집하기</a></td>
+        <td><a href="{{ url_for('newsletter_download', newsletter_id=n.id) }}">이미지 다운로드</a></td>
+        <td>
+          <form method="post" action="{{ url_for('newsletter_delete', newsletter_id=n.id) }}" class="inline-form"
+                onsubmit="return confirm('{{ n.year }}년 {{ n.month }}월 알림장을 삭제할까요?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-small btn-danger">삭제</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">아직 만들어진 알림장이 없습니다. "새 알림장 만들기"로 시작해보세요.</p>
+  {% endif %}
+</section>
+{% endblock %}
