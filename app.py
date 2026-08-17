@@ -447,6 +447,35 @@ def newsletter_download(newsletter_id):
     )
 
 
+# 알림장은 모든 학부모가 공통으로 보는 자료라서, 학부모별로 업로드하지 않고
+# 관리자가 한 번만 만들어두면 로그인한 학부모 전원이 아래 경로로 볼 수 있습니다.
+@app.route("/newsletters/<int:newsletter_id>/view")
+@login_required
+def newsletter_public_preview(newsletter_id):
+    data = nl.get_newsletter(newsletter_id)
+    if not data:
+        abort(404)
+    return render_flyer_html(data)
+
+
+@app.route("/newsletters/<int:newsletter_id>/download")
+@login_required
+def newsletter_public_download(newsletter_id):
+    data = nl.get_newsletter(newsletter_id)
+    if not data:
+        abort(404)
+    fd, tmp_path = tempfile.mkstemp(suffix=".png")
+    os.close(fd)
+    render_flyer_png(data, tmp_path)
+    download_name = f"{data['academy_name']}_{data['year']}년{data['month']}월_알림장.png"
+    return send_file(
+        tmp_path,
+        mimetype="image/png",
+        as_attachment=True,
+        download_name=download_name,
+    )
+
+
 def _parse_score_form():
     errors = []
 
@@ -625,11 +654,13 @@ def parent_dashboard():
     overall_avg = None
     if subject_trends:
         overall_avg = round(sum(t["latest_pct"] for t in subject_trends) / len(subject_trends), 1)
+    newsletters = nl.list_newsletters()
     return render_template(
         "parent_dashboard.html",
         score_rows=score_rows,
         subject_trends=subject_trends,
         overall_avg=overall_avg,
+        newsletters=newsletters,
     )
 
 

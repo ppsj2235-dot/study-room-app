@@ -92,8 +92,42 @@
   </p>
 </section>
 
-<section class="card card-muted">
+<section class="card">
   <h2>알림장</h2>
-  <p class="muted">알림장 다운로드 기능도 다음 단계에서 추가될 예정입니다.</p>
+  {% if newsletters %}
+  {% set latest = newsletters[0] %}
+  <p class="muted">{{ latest.year }}년 {{ latest.month }}월 알림장이에요. 아래에서 바로 보시거나 이미지로 저장하실 수 있어요.</p>
+
+  <div class="nl-preview-frame" style="width:100%; max-width:410px; height:615px;">
+    <iframe src="{{ url_for('newsletter_public_preview', newsletter_id=latest.id) }}" width="1024" height="1536"></iframe>
+  </div>
+  <a class="btn btn-primary" style="margin-top:14px;" href="{{ url_for('newsletter_public_download', newsletter_id=latest.id) }}">이미지로 다운로드</a>
+
+  {% if newsletters|length > 1 %}
+  <h2 style="margin-top:26px;">지난 알림장</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>연도</th>
+        <th>월</th>
+        <th>보기</th>
+        <th>다운로드</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for n in newsletters[1:] %}
+      <tr>
+        <td>{{ n.year }}</td>
+        <td>{{ n.month }}월</td>
+        <td><a href="{{ url_for('newsletter_public_preview', newsletter_id=n.id) }}" target="_blank">미리보기</a></td>
+        <td><a href="{{ url_for('newsletter_public_download', newsletter_id=n.id) }}">다운로드</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% else %}
+  <p class="muted">아직 등록된 알림장이 없습니다. 선생님이 알림장을 만들면 이 화면에서 바로 보실 수 있어요.</p>
+  {% endif %}
 </section>
 {% endblock %}

@@ -84,24 +84,23 @@
   .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 50px;
-    row-gap: 10px;
+    grid-auto-rows: 46px;
+    row-gap: 8px;
+    column-gap: 6px;
     margin-top: 14px;
     align-items: center;
   }
   .cal-dow { text-align: center; font-size: 15px; font-weight: 700; color: #35402f; padding-bottom: 10px; }
   .cal-dow.weekend { color: #E8433A; }
-  .cal-pill {
+  .cal-day {
     display: flex; align-items: center; justify-content: center;
-    gap: 14px;
     height: 46px;
-    border-radius: 26px;
-    font-size: 17px; font-weight: 700;
-    color: #26301f;
+    border-radius: 12px;
+    font-size: 16px; font-weight: 700;
+    color: #FBFAF5;
   }
-  .cal-pill.open { background: #527D33; color: #FBFAF5; }
-  .cal-pill.closed { background: #E8433A; color: #FBFAF5; }
-  .cal-pill.single { width: 46px; margin: 0 auto; }
+  .cal-day.open { background: #527D33; }
+  .cal-day.closed { background: #E8433A; }
   .cal-legend { display: flex; align-items: center; gap: 22px; margin-top: 14px; font-size: 13px; color: #6b7267; }
   .cal-legend .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
   .dot.open { background: #527D33; }
@@ -233,13 +232,15 @@
         {% for label in weekday_labels %}
           <div class="cal-dow {{ 'weekend' if loop.index0 >= 4 else '' }}">{{ label }}</div>
         {% endfor %}
-        {% for week in weeks_groups %}
+        {% for week in weeks %}
           {% set week_row = loop.index + 1 %}
-          {% for g in week %}
-            <div class="cal-pill {{ g.status }} {{ 'single' if g.end == g.start else '' }}"
-                 style="grid-column: {{ g.start + 1 }} / {{ g.end + 2 }}; grid-row: {{ week_row }};">
-              {{ g.days|join('&nbsp;&nbsp;')|safe }}
+          {% for cell in week %}
+            {% if cell %}
+            <div class="cal-day {{ cell.status }}"
+                 style="grid-column: {{ loop.index }}; grid-row: {{ week_row }};">
+              {{ cell.day }}
             </div>
+            {% endif %}
           {% endfor %}
         {% endfor %}
       </div>

@@ -7,7 +7,7 @@ import os
 from jinja2 import Environment, FileSystemLoader
 
 import icons
-from newsletter_calendar import build_calendar, pill_groups
+from newsletter_calendar import build_calendar
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static", "newsletter")
@@ -41,7 +41,6 @@ def render_flyer_html(newsletter):
         extra_closed_days=newsletter.get("extra_closed_days"),
         extra_open_days=newsletter.get("extra_open_days"),
     )
-    weeks_groups = [pill_groups(week) for week in cal["weeks"]]
 
     qr_path = newsletter.get("tuition", {}).get("qr_image_path")
 
@@ -52,7 +51,7 @@ def render_flyer_html(newsletter):
         "month_eng": MONTH_ENG[month],
         "tagline": newsletter.get("tagline", "기초부터 탄탄하게, 끝까지 함께."),
         "weekday_labels": cal["weekday_labels"],
-        "weeks_groups": weeks_groups,
+        "weeks": cal["weeks"],
         "notices": newsletter.get("notices") or ["원장님이 여기에 공지사항을 입력해주세요."],
         "tuition": {
             "period": newsletter.get("tuition", {}).get("period", ""),

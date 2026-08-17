@@ -71,24 +71,3 @@ def build_calendar(year, month, extra_closed_days=None, extra_open_days=None):
         "weekday_labels": WEEKDAY_LABELS,
         "month_days": month_days,
     }
-
-
-def pill_groups(week):
-    """
-    한 주(week, 7칸)에서 연속된 같은 status를 가진 날짜들을 그룹으로 묶어
-    (start_index, end_index, status, days) 튜플 리스트로 반환.
-    비어있는(None) 칸은 그룹을 끊는다.
-    """
-    groups = []
-    current = None
-    for idx, cell in enumerate(week):
-        if cell is None:
-            current = None
-            continue
-        if current and current["status"] == cell["status"]:
-            current["end"] = idx
-            current["days"].append(cell["day"])
-        else:
-            current = {"start": idx, "end": idx, "status": cell["status"], "days": [cell["day"]]}
-            groups.append(current)
-    return groups
