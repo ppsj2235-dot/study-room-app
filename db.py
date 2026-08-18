@@ -1,19 +1,70 @@
 """
-아주 단순한 SQLite 접근 헬퍼.
-나중에 사용자가 많아지면 PostgreSQL 등으로 옮길 수 있도록
-쿼리를 한 군데(models.py)에 모아두었습니다.
+DB 접근 헬퍼.
+
+기본은 SQLite(파일 DB)를 쓰지만, 환경변수 DATABASE_URL이 설정되어 있으면
+PostgreSQL(Neon 등 무료 호스팅)을 대신 사용합니다. Render 같은 배포 환경에서는
+재배포할 때마다 SQLite 파일이 초기화되기 때문에, 실제 운영에서는 DATABASE_URL을
+설정해서 PostgreSQL을 쓰는 걸 권장합니다.
+
+models.py / models_newsletter.py / models_scores.py는 이 파일이 제공하는
+db_cursor()만 사용하고, SQLite와 PostgreSQL의 차이(플레이스홀더 `?` vs `%s`,
+새로 생성된 id를 가져오는 방식)는 전부 이 파일 안에서만 처리합니다. 즉, 위
+파일들의 쿼리 코드는 두 DB 어디에서 실행되든 그대로 동작합니다.
 """
 import os
 import sqlite3
 from contextlib import contextmanager
+
+DATABASE_URL = os.environ.get("DATABASE_URL")  # 설정되어 있으면 PostgreSQL 사용
+IS_PG = bool(DATABASE_URL)
 
 DB_PATH = os.environ.get(
     "DATABASE_PATH",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "app.db"),
 )
 
+if IS_PG:
+    import psycopg2
+    import psycopg2.extras
+
+
+class _PGCursor:
+    """PostgreSQL용 커서 래퍼.
+
+    - SQLite 스타일 플레이스홀더(`?`)를 PostgreSQL 스타일(`%s`)로 자동 변환합니다.
+    - INSERT 문에는 자동으로 `RETURNING id`를 붙이고, 실행 결과를 `lastrowid`로
+      노출해서 sqlite3의 `cursor.lastrowid`와 동일하게 쓸 수 있게 합니다.
+    """
+
+    def __init__(self, raw_cursor):
+        self._cur = raw_cursor
+        self.lastrowid = None
+
+    def execute(self, sql, params=()):
+        translated = sql.replace("?", "%s")
+        stripped = translated.strip().upper()
+        is_insert = stripped.startswith("INSERT INTO")
+        if is_insert and "RETURNING" not in stripped:
+            translated = translated.rstrip().rstrip(";") + " RETURNING id"
+        self._cur.execute(translated, params)
+        if is_insert:
+            row = self._cur.fetchone()
+            self.lastrowid = row["id"] if row else None
+        return self
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    def __getattr__(self, name):
+        return getattr(self._cur, name)
+
 
 def get_connection():
+    if IS_PG:
+        return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -25,7 +76,8 @@ def get_connection():
 def db_cursor(commit=False):
     conn = get_connection()
     try:
-        cur = conn.cursor()
+        raw_cur = conn.cursor()
+        cur = _PGCursor(raw_cur) if IS_PG else raw_cur
         yield cur
         if commit:
             conn.commit()
@@ -33,12 +85,16 @@ def db_cursor(commit=False):
         conn.close()
 
 
+# SQLite는 "INTEGER PRIMARY KEY AUTOINCREMENT", PostgreSQL은 "SERIAL PRIMARY KEY"
+_PK = "SERIAL PRIMARY KEY" if IS_PG else "INTEGER PRIMARY KEY AUTOINCREMENT"
+
+
 def init_db():
     with db_cursor(commit=True) as cur:
         cur.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {_PK},
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL CHECK (role IN ('admin', 'parent')),
@@ -51,9 +107,9 @@ def init_db():
         # 다음 단계(알림장 / 학습 평가표)를 위해 테이블은 미리 만들어두되
         # 아직 화면/기능은 연결하지 않습니다. (요청하신 대로 로그인부터 우선 진행)
         cur.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS notices (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {_PK},
                 title TEXT NOT NULL,
                 file_path TEXT NOT NULL,
                 original_filename TEXT NOT NULL,
@@ -63,9 +119,9 @@ def init_db():
             """
         )
         cur.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {_PK},
                 parent_id INTEGER NOT NULL REFERENCES users(id),
                 title TEXT NOT NULL,
                 file_path TEXT NOT NULL,
@@ -76,9 +132,9 @@ def init_db():
             """
         )
         cur.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS newsletters (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {_PK},
                 year INTEGER NOT NULL,
                 month INTEGER NOT NULL,
                 data TEXT NOT NULL,
@@ -89,9 +145,9 @@ def init_db():
         )
         # 중간고사 / 기말고사 / 월말고사 성적 (숫자 점수) - 관리자만 등록/수정 가능
         cur.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS exam_scores (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {_PK},
                 parent_id INTEGER NOT NULL REFERENCES users(id),
                 exam_type TEXT NOT NULL,
                 subject TEXT NOT NULL,
