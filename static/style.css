@@ -357,6 +357,50 @@ input[type="file"] {
   margin-bottom: 8px;
 }
 
+/* Newsletter theme picker */
+.theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.theme-option:has(input:checked) {
+  border-color: var(--primary);
+  background: #eef1fd;
+}
+
+.theme-option input {
+  width: auto;
+  margin: 0;
+}
+
+.theme-swatch {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.theme-swatch span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 /* Parent score dashboard */
 .kpi-row {
   display: grid;
