@@ -1,0 +1,13 @@
+name: Keep Render Awake
+
+on:
+  schedule:
+    - cron: '*/8 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping site to keep it awake
+        run: curl -sSf --max-time 60 https://study-room-app-2.onrender.com/ || true
