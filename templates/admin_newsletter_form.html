@@ -143,6 +143,23 @@
   </section>
 
   <section class="card">
+    <h2>색상 테마 <span class="optional">(레이아웃은 그대로, 색만 바뀌어요. 다음 달에도 이어서 적용돼요)</span></h2>
+    <div class="theme-picker">
+      {% for key, label, dark, positive, negative in theme_choices %}
+      <label class="theme-option">
+        <input type="radio" name="theme" value="{{ key }}" {{ 'checked' if (newsletter.theme or 'green') == key else '' }} />
+        <span class="theme-swatch">
+          <span style="background:{{ dark }};"></span>
+          <span style="background:{{ positive }};"></span>
+          <span style="background:{{ negative }};"></span>
+        </span>
+        <span class="theme-label">{{ label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
     <h2>기본 정보</h2>
     <div class="form-grid">
       <label>공부방 이름

@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=1024" />
 <title>{{ academy_name }} {{ year }}년 {{ month }}월 알림장</title>
 <style>
   @font-face {
@@ -9,10 +10,22 @@
     src: local('Noto Sans CJK KR');
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    /* 관리자가 고른 색상 테마 값은 body 태그의 style 속성으로 주입됩니다.
+       아래는 혹시 값이 없을 때를 대비한 기본값(그린 테마)입니다. */
+    --c-dark: #04482B;
+    --c-positive: #527D33;
+    --c-positive-light: #C7D2A4;
+    --c-negative: #E8433A;
+    --c-bg: #FBFAF5;
+    --c-card-bg: #FCFAF6;
+    --c-border: #E7E3D6;
+    --c-frame-border: #E3E0D4;
+  }
   html, body {
     width: 1024px;
     height: 1536px;
-    background: #FBFAF5;
+    background: var(--c-bg);
   }
   body {
     font-family: 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif;
@@ -23,13 +36,13 @@
     position: relative;
     width: 1024px;
     height: 1536px;
-    background: #FBFAF5;
+    background: var(--c-bg);
     overflow: hidden;
   }
   .frame {
     position: absolute;
     left: 10px; top: 10px; right: 10px; bottom: 10px;
-    border: 1.5px solid #E3E0D4;
+    border: 1.5px solid var(--c-frame-border);
     border-radius: 6px;
     pointer-events: none;
   }
@@ -37,9 +50,9 @@
   /* ---------- Ribbon ---------- */
   .ribbon {
     position: absolute; left: 0; top: 0; width: 160px; height: 262px;
-    background: #04482B;
+    background: var(--c-dark);
     clip-path: polygon(0 0, 100% 0, 100% 87%, 50% 100%, 0 87%);
-    color: #FBFAF5;
+    color: var(--c-bg);
     text-align: center;
   }
   .ribbon .year { margin-top: 32px; font-size: 25px; font-weight: 700; letter-spacing: 1px; }
@@ -49,12 +62,12 @@
 
   /* ---------- Title block ---------- */
   .title-block { position: absolute; left: 178px; top: 26px; width: 470px; }
-  .kicker { font-size: 19px; font-weight: 700; color: #04482B; margin-bottom: 8px; }
-  .site-title { font-size: 58px; font-weight: 900; color: #04482B; line-height: 1.08; letter-spacing: -1px; }
+  .kicker { font-size: 19px; font-weight: 700; color: var(--c-dark); margin-bottom: 8px; }
+  .site-title { font-size: 58px; font-weight: 900; color: var(--c-dark); line-height: 1.08; letter-spacing: -1px; }
   .subtitle-en {
-    font-size: 30px; font-weight: 800; color: #527D33; letter-spacing: 1px;
+    font-size: 30px; font-weight: 800; color: var(--c-positive); letter-spacing: 1px;
     margin-top: 10px; display: inline-block; padding-bottom: 8px;
-    border-bottom: 3px solid #C7D2A4;
+    border-bottom: 3px solid var(--c-positive-light);
   }
   .tagline { font-size: 17px; color: #3a4433; margin-top: 16px; font-weight: 500; }
 
@@ -65,17 +78,17 @@
   /* ---------- Card grid ---------- */
   .card {
     position: absolute;
-    background: #FCFAF6;
-    border: 1px solid #E7E3D6;
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
     border-radius: 18px;
   }
   .card-head { display: flex; align-items: center; gap: 10px; padding: 20px 22px 4px; }
   .card-head .icon-badge {
     width: 34px; height: 34px; border-radius: 50%;
-    background: #04482B; display: flex; align-items: center; justify-content: center;
+    background: var(--c-dark); display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .card-head .icon-badge.red { background: #E8433A; }
+  .card-head .icon-badge.red { background: var(--c-negative); }
   .card-head h2 { font-size: 21px; font-weight: 800; color: #1c2a1c; }
   .card-body { padding: 8px 22px 20px; }
 
@@ -91,27 +104,27 @@
     align-items: center;
   }
   .cal-dow { text-align: center; font-size: 15px; font-weight: 700; color: #35402f; padding-bottom: 10px; }
-  .cal-dow.weekend { color: #E8433A; }
+  .cal-dow.weekend { color: var(--c-negative); }
   .cal-day {
     display: flex; align-items: center; justify-content: center;
     height: 46px;
     border-radius: 12px;
     font-size: 16px; font-weight: 700;
-    color: #FBFAF5;
+    color: var(--c-bg);
   }
-  .cal-day.open { background: #527D33; }
-  .cal-day.closed { background: #E8433A; }
+  .cal-day.open { background: var(--c-positive); }
+  .cal-day.closed { background: var(--c-negative); }
   .cal-legend { display: flex; align-items: center; gap: 22px; margin-top: 14px; font-size: 13px; color: #6b7267; }
   .cal-legend .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
-  .dot.open { background: #527D33; }
-  .dot.closed { background: #E8433A; }
+  .dot.open { background: var(--c-positive); }
+  .dot.closed { background: var(--c-negative); }
 
   /* ---------- Notice card ---------- */
   #card-notice { left: 450px; top: 305px; width: 230px; height: 468px; }
   .notice-item { margin-top: 18px; }
   .notice-row { display: flex; gap: 10px; align-items: flex-start; }
   .notice-num {
-    width: 24px; height: 24px; border-radius: 50%; background: #04482B; color: #FBFAF5;
+    width: 24px; height: 24px; border-radius: 50%; background: var(--c-dark); color: var(--c-bg);
     font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; margin-top: 1px;
   }
@@ -136,11 +149,11 @@
   /* ---------- Row 2: growth / tip / director ---------- */
   .card-header-bar {
     position: absolute; left: 0; top: 0; width: 100%; height: 44px;
-    background: #04482B; border-radius: 18px 18px 0 0;
+    background: var(--c-dark); border-radius: 18px 18px 0 0;
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    color: #FBFAF5; font-size: 18px; font-weight: 800;
+    color: var(--c-bg); font-size: 18px; font-weight: 800;
   }
-  .card-header-bar.red { background: #E8433A; }
+  .card-header-bar.red { background: var(--c-negative); }
 
   #card-growth { left: 20px; top: 800px; width: 320px; height: 340px; }
   #card-tip { left: 352px; top: 800px; width: 320px; height: 340px; }
@@ -149,7 +162,7 @@
   .growth-list { padding: 58px 20px 16px; }
   .growth-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; }
   .growth-icon {
-    width: 34px; height: 34px; border-radius: 50%; border: 2px solid #527D33;
+    width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--c-positive);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .growth-title { font-size: 14.5px; font-weight: 800; color: #1c2a1c; }
@@ -158,7 +171,7 @@
   .tip-list { padding: 58px 20px 16px; }
   .tip-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; }
   .tip-check {
-    width: 30px; height: 30px; border-radius: 50%; border: 2px solid #E8433A;
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--c-negative);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .tip-text { font-size: 14px; font-weight: 700; color: #26301f; line-height: 1.45; padding-top: 3px; }
@@ -178,8 +191,8 @@
   #card-quote { left: 20px; top: 1370px; width: 410px; height: 118px; }
   #card-contact { left: 450px; top: 1370px; width: 554px; height: 118px; }
   .mini-header {
-    height: 40px; border-radius: 18px 18px 0 0; background: #04482B;
-    color: #FBFAF5; display: flex; align-items: center; justify-content: center;
+    height: 40px; border-radius: 18px 18px 0 0; background: var(--c-dark);
+    color: var(--c-bg); display: flex; align-items: center; justify-content: center;
     gap: 8px; font-size: 16px; font-weight: 800;
   }
   .quote-body { padding: 12px 26px 0; text-align: center; }
@@ -193,13 +206,13 @@
   /* ---------- Footer ---------- */
   .footer-bar {
     position: absolute; left: 20px; right: 20px; top: 1500px; height: 34px;
-    background: #04482B; border-radius: 10px;
-    color: #FBFAF5; font-size: 13.5px; font-weight: 600;
+    background: var(--c-dark); border-radius: 10px;
+    color: var(--c-bg); font-size: 13.5px; font-weight: 600;
     display: flex; align-items: center; justify-content: center; gap: 10px;
   }
 </style>
 </head>
-<body>
+<body data-theme="{{ theme_key }}" style="--c-dark: {{ theme_colors.dark }}; --c-positive: {{ theme_colors.positive }}; --c-positive-light: {{ theme_colors.positive_light }}; --c-negative: {{ theme_colors.negative }}; --c-bg: {{ theme_colors.bg }}; --c-card-bg: {{ theme_colors.card_bg }}; --c-border: {{ theme_colors.border }}; --c-frame-border: {{ theme_colors.frame_border }};">
 <div class="page">
   <div class="frame"></div>
 
