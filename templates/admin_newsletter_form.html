@@ -175,4 +175,40 @@
     <button type="submit" class="btn btn-primary btn-block">저장하기</button>
   </div>
 </form>
+
+<script>
+(function () {
+  var THEME_ASSETS = {{ theme_assets|tojson }};
+  var iframe = document.querySelector(".nl-preview-frame iframe");
+  var radios = document.querySelectorAll('input[name="theme"]');
+
+  function applyTheme(themeKey) {
+    var theme = THEME_ASSETS[themeKey];
+    if (!theme || !iframe) return;
+    var doc = iframe.contentDocument;
+    if (!doc || !doc.body) return;
+    var body = doc.body;
+    var c = theme.colors;
+    body.setAttribute("data-theme", themeKey);
+    body.style.setProperty("--c-dark", c.dark);
+    body.style.setProperty("--c-positive", c.positive);
+    body.style.setProperty("--c-positive-light", c.positive_light);
+    body.style.setProperty("--c-negative", c.negative);
+    body.style.setProperty("--c-bg", c.bg);
+    body.style.setProperty("--c-card-bg", c.card_bg);
+    body.style.setProperty("--c-border", c.border);
+    body.style.setProperty("--c-frame-border", c.frame_border);
+    var topImg = doc.querySelector(".illust-topright");
+    if (topImg && theme.topright) topImg.src = theme.topright;
+    var bagImg = doc.querySelector(".home-illust");
+    if (bagImg && theme.backpack) bagImg.src = theme.backpack;
+  }
+
+  radios.forEach(function (radio) {
+    radio.addEventListener("change", function () {
+      if (this.checked) applyTheme(this.value);
+    });
+  });
+})();
+</script>
 {% endblock %}
