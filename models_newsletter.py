@@ -4,6 +4,7 @@ from datetime import date
 
 from db import db_cursor
 from content_bank import suggest_director_message, suggest_quote
+from newsletter_themes import DEFAULT_THEME
 
 DEFAULT_ACADEMY_TAGLINE = "기초부터 탄탄하게, 끝까지 함께."
 
@@ -76,6 +77,7 @@ def build_default_data(academy_name, year, month, carry_over=None):
     base = {
         "academy_name": academy_name,
         "tagline": DEFAULT_ACADEMY_TAGLINE,
+        "theme": DEFAULT_THEME,
         "notices": ["", "", ""],
         "tuition": dict(DEFAULT_TUITION),
         "growth_items": [dict(x) for x in DEFAULT_GROWTH_ITEMS],
@@ -87,7 +89,7 @@ def build_default_data(academy_name, year, month, carry_over=None):
     }
 
     if carry_over:
-        for key in ("tagline", "notices", "tuition", "growth_items", "tip_items", "home_items", "contact"):
+        for key in ("tagline", "theme", "notices", "tuition", "growth_items", "tip_items", "home_items", "contact"):
             if carry_over.get(key):
                 base[key] = carry_over[key]
 

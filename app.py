@@ -25,6 +25,7 @@ import models_scores as scores
 from content_bank import suggest_director_message, suggest_quote
 from db import init_db
 from newsletter_render import render_flyer_html, render_flyer_png
+from newsletter_themes import DEFAULT_THEME, THEMES, theme_choices
 
 load_dotenv()
 
@@ -256,9 +257,14 @@ def _parse_newsletter_form(form, existing_qr_path=None):
     home_descs = _form_list("home_desc", 4)
     home_items = [{"title": t, "desc": d} for t, d in zip(home_titles, home_descs)]
 
+    theme = form.get("theme", "").strip()
+    if theme not in THEMES:
+        theme = DEFAULT_THEME
+
     data = {
         "academy_name": form.get("academy_name", "").strip() or ACADEMY_NAME,
         "tagline": form.get("tagline", "").strip(),
+        "theme": theme,
         "notices": notices,
         "tuition": {
             "period": form.get("tuition_period", "").strip(),
@@ -358,6 +364,7 @@ def newsletter_edit(newsletter_id):
         month=data["month"],
         is_new=False,
         newsletter_id=newsletter_id,
+        theme_choices=theme_choices(),
     )
 
 

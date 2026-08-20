@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import icons
 from newsletter_calendar import build_calendar
+from newsletter_themes import DEFAULT_THEME, get_theme_colors
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static", "newsletter")
@@ -30,6 +31,16 @@ def _file_to_data_uri(path):
     return f"data:image/{mime};base64,{b64}"
 
 
+def _themed_illust_path(base_name, theme_key):
+    """테마별로 미리 만들어둔 삽화(캐릭터 옷/가방 색 등)가 있으면 그걸 쓰고,
+    없으면(기본 그린 테마 포함) 원본 파일을 그대로 씁니다."""
+    if theme_key and theme_key != DEFAULT_THEME:
+        themed_path = os.path.join(STATIC_DIR, f"{base_name}_{theme_key}.png")
+        if os.path.exists(themed_path):
+            return themed_path
+    return os.path.join(STATIC_DIR, f"{base_name}.png")
+
+
 def render_flyer_html(newsletter):
     """newsletter: dict (see models_newsletter.default_newsletter_data 구조)"""
     year = newsletter["year"]
@@ -43,8 +54,12 @@ def render_flyer_html(newsletter):
     )
 
     qr_path = newsletter.get("tuition", {}).get("qr_image_path")
+    theme_key = newsletter.get("theme") or DEFAULT_THEME
+    theme_colors = get_theme_colors(theme_key)
 
     ctx = {
+        "theme_key": theme_key,
+        "theme_colors": theme_colors,
         "academy_name": newsletter["academy_name"],
         "year": year,
         "month": month,
@@ -67,8 +82,8 @@ def render_flyer_html(newsletter):
         "quote_text": newsletter.get("quote_text", ""),
         "quote_author": newsletter.get("quote_author", ""),
         "contact": newsletter.get("contact", {}),
-        "illust_topright": _file_to_data_uri(os.path.join(STATIC_DIR, "illust_topright.png")),
-        "illust_backpack": _file_to_data_uri(os.path.join(STATIC_DIR, "illust_backpack.png")),
+        "illust_topright": _file_to_data_uri(_themed_illust_path("illust_topright", theme_key)),
+        "illust_backpack": _file_to_data_uri(_themed_illust_path("illust_backpack", theme_key)),
         "icon_calendar": icons.ICON_CALENDAR,
         "icon_megaphone": icons.ICON_MEGAPHONE,
         "icon_card": icons.ICON_CARD,
