@@ -24,7 +24,7 @@ import models_newsletter as nl
 import models_scores as scores
 from content_bank import suggest_director_message, suggest_quote
 from db import init_db
-from newsletter_render import render_flyer_html, render_flyer_png
+from newsletter_render import render_flyer_html, render_flyer_png, THEME_ASSETS
 from newsletter_themes import DEFAULT_THEME, THEMES, theme_choices
 
 load_dotenv()
@@ -365,6 +365,7 @@ def newsletter_edit(newsletter_id):
         is_new=False,
         newsletter_id=newsletter_id,
         theme_choices=theme_choices(),
+        theme_assets=THEME_ASSETS,
     )
 
 

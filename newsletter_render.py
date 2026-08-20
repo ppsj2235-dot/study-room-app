@@ -8,7 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import icons
 from newsletter_calendar import build_calendar
-from newsletter_themes import DEFAULT_THEME, get_theme_colors
+from newsletter_themes import DEFAULT_THEME, THEMES, get_theme_colors
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static", "newsletter")
@@ -39,6 +39,24 @@ def _themed_illust_path(base_name, theme_key):
         if os.path.exists(themed_path):
             return themed_path
     return os.path.join(STATIC_DIR, f"{base_name}.png")
+
+
+def _build_theme_assets():
+    """관리자 편집 화면에서 테마를 고를 때 저장 없이도 미리보기(iframe)를
+    바로 갱신할 수 있도록, 테마별 색상값 + 삽화(data URI)를 미리 한 번에
+    계산해둔다. 테마 개수(11개)가 적고 이미지 용량도 작아서 서버 시작 시
+    한 번만 계산해도 충분하다."""
+    assets = {}
+    for key, colors in THEMES.items():
+        assets[key] = {
+            "colors": colors,
+            "topright": _file_to_data_uri(_themed_illust_path("illust_topright", key)),
+            "backpack": _file_to_data_uri(_themed_illust_path("illust_backpack", key)),
+        }
+    return assets
+
+
+THEME_ASSETS = _build_theme_assets()
 
 
 def render_flyer_html(newsletter):
