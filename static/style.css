@@ -146,7 +146,7 @@ input[type="file"] {
 
 .nl-preview-frame {
   width: 410px;
-  height: 615px;
+  height: 569px;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -155,7 +155,7 @@ input[type="file"] {
 
 .nl-preview-frame iframe {
   width: 1024px;
-  height: 1536px;
+  height: 1420px;
   border: 0;
   transform: scale(0.4004);
   transform-origin: 0 0;
