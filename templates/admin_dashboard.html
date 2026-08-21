@@ -1,41 +1,81 @@
 {% extends "base.html" %}
 {% block title %}관리자 대시보드 - {{ academy_name }}{% endblock %}
 {% block content %}
-<h1 class="page-title">관리자 대시보드</h1>
+
+<div class="topline">
+  <div>
+    <div class="greet-kicker">Administrator</div>
+    <h1 class="greet-h1 serif">{{ current_user.name }}님, 안녕하세요</h1>
+    <div class="greet-date">{{ academy_name }} 관리자 대시보드</div>
+  </div>
+</div>
+
+<div class="grid-3">
+  <div class="stat-tile">
+    <div class="stat-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.7 14.6c2.7.4 4.8 2.1 4.8 5.4"/></svg></div>
+    <div class="stat-label">등록된 학부모</div>
+    <div class="stat-value">{{ parents|length }}<small>명</small></div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 002 2h1l2 5h2l-1.5-5H12l7 4V6l-7 4H6a2 2 0 00-2 2z"/></svg></div>
+    <div class="stat-label">최근 알림장</div>
+    {% if latest_newsletter %}
+    <div class="stat-value" style="font-size:19px;">{{ latest_newsletter.year }}년 {{ latest_newsletter.month }}월</div>
+    {% else %}
+    <div class="stat-value" style="font-size:19px;">없음</div>
+    {% endif %}
+  </div>
+  <div class="stat-tile">
+    <div class="stat-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7 19v-6M12 19V7M17 19v-10"/></svg></div>
+    <div class="stat-label">등록된 성적 건수</div>
+    <div class="stat-value">{{ score_count }}<small>건</small></div>
+  </div>
+</div>
 
 <section class="card">
-  <h2>학부모 계정 발급</h2>
-  <p class="muted">학부모가 로그인할 아이디와 비밀번호를 직접 만들어 발급해주세요.</p>
-  <form method="post" action="{{ url_for('create_parent') }}" class="form-grid">
+  <div class="card-title-row">
+    <div class="card-title">
+      <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <h2>학부모 계정 발급</h2>
+    </div>
+  </div>
+  <p class="muted" style="margin:-10px 0 20px;">학부모가 로그인할 아이디와 비밀번호를 직접 만들어 발급해주세요.</p>
+  <form method="post" action="{{ url_for('create_parent') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-    <label>
-      아이디
-      <input type="text" name="username" required />
-    </label>
-    <label>
-      비밀번호
-      <input type="text" name="password" required minlength="4" placeholder="4자 이상" />
-    </label>
-    <label>
-      학부모 이름
-      <input type="text" name="name" required />
-    </label>
-    <label>
-      학생(자녀) 이름 <span class="optional">(선택)</span>
-      <input type="text" name="student_name" />
-    </label>
-    <button type="submit" class="btn btn-primary">계정 생성</button>
+    <div class="form-row">
+      <label>
+        아이디
+        <input type="text" name="username" required />
+      </label>
+      <label>
+        비밀번호
+        <input type="text" name="password" required minlength="4" placeholder="4자 이상" />
+      </label>
+      <label>
+        학부모 이름
+        <input type="text" name="name" required />
+      </label>
+      <label>
+        학생(자녀) 이름 <span class="optional">(선택)</span>
+        <input type="text" name="student_name" />
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:22px;">계정 생성</button>
   </form>
 </section>
 
 <section class="card">
-  <h2>학부모 계정 목록 <span class="count">({{ parents|length }}명)</span></h2>
+  <div class="card-title-row">
+    <div class="card-title">
+      <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.7 14.6c2.7.4 4.8 2.1 4.8 5.4"/></svg></div>
+      <h2>학부모 계정 목록 <span class="count">({{ parents|length }}명)</span></h2>
+    </div>
+  </div>
   {% if parents %}
   <table class="table">
     <thead>
       <tr>
-        <th>아이디</th>
-        <th>학부모 이름</th>
+        <th>학부모</th>
         <th>학생 이름</th>
         <th>가입일</th>
         <th>비밀번호 재설정</th>
@@ -45,8 +85,15 @@
     <tbody>
       {% for p in parents %}
       <tr>
-        <td>{{ p.username }}</td>
-        <td>{{ p.name }}</td>
+        <td>
+          <div class="name-cell">
+            <div class="avatar-mini">{{ p.name[0] }}</div>
+            <div>
+              <div style="font-weight:700;">{{ p.name }}</div>
+              <div class="muted" style="font-size:11.5px;">{{ p.username }}</div>
+            </div>
+          </div>
+        </td>
         <td>{{ p.student_name or '-' }}</td>
         <td>{{ p.created_at }}</td>
         <td>
@@ -72,23 +119,26 @@
   {% endif %}
 </section>
 
-<section class="card">
-  <h2>월간 알림장</h2>
-  <p class="muted">달력, 공지사항, 수강료 안내 등이 담긴 월간 알림장을 만들고 이미지로 다운로드할 수 있습니다.</p>
-  <a class="btn btn-primary" href="{{ url_for('newsletter_list') }}">알림장 관리로 이동</a>
-</section>
-
-<section class="card">
-  <h2>성적 관리</h2>
-  <p class="muted">중간고사·기말고사·월말고사 점수를 학생별로 등록/수정합니다. 이 화면은 관리자만 볼 수 있어요.</p>
-  <a class="btn btn-primary" href="{{ url_for('scores_list') }}">성적 관리로 이동</a>
-</section>
-
-<section class="card card-muted">
-  <h2>다음 단계 (준비 중)</h2>
-  <p class="muted">
-    학부모별 학습 평가표(이미지) 업로드 기능과, 학부모 화면에서 성적을 확인하는 기능은
-    다음 단계에서 이어서 개발할 예정입니다.
-  </p>
-</section>
+<div class="admin-links-row">
+  <div class="card">
+    <div class="card-title-row">
+      <div class="card-title">
+        <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 002 2h1l2 5h2l-1.5-5H12l7 4V6l-7 4H6a2 2 0 00-2 2z"/></svg></div>
+        <h2>월간 알림장</h2>
+      </div>
+    </div>
+    <p class="muted" style="margin:-6px 0 20px;">달력, 공지사항, 수강료 안내 등이 담긴 월간 알림장을 만들고 이미지로 다운로드할 수 있어요.</p>
+    <a class="btn btn-primary" href="{{ url_for('newsletter_list') }}">알림장 관리로 이동</a>
+  </div>
+  <div class="card">
+    <div class="card-title-row">
+      <div class="card-title">
+        <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7 19v-6M12 19V7M17 19v-10"/></svg></div>
+        <h2>성적 관리</h2>
+      </div>
+    </div>
+    <p class="muted" style="margin:-6px 0 20px;">중간고사·기말고사·월말고사 점수를 학생별로 등록/수정합니다. 이 화면은 관리자만 볼 수 있어요.</p>
+    <a class="btn btn-primary" href="{{ url_for('scores_list') }}">성적 관리로 이동</a>
+  </div>
+</div>
 {% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}성적 - {{ academy_name }}{% endblock %}
+{% block content %}
+
+<div class="topline">
+  <div>
+    <div class="greet-kicker">My Child's Progress</div>
+    <h1 class="greet-h1 serif">{{ current_user.student_name or current_user.name }} 학생 성적</h1>
+    <div class="greet-date">중간고사·기말고사·월말고사 점수예요. 선생님이 새 점수를 등록하면 여기에 자동으로 반영돼요.</div>
+  </div>
+</div>
+
+{% if subject_trends %}
+<div class="grid-3">
+  <div class="stat-tile">
+    <div class="stat-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/></svg></div>
+    <div class="stat-label">최근 시험 평균</div>
+    <div class="stat-value">{{ overall_avg }}<small>점 (100점 환산)</small></div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.4 2.4L16 10"/></svg></div>
+    <div class="stat-label">전체 응시 횟수</div>
+    <div class="stat-value">{{ score_rows|length }}<small>회</small></div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h12l-3 4 3 4H5"/></svg></div>
+    <div class="stat-label">확인이 필요한 과목</div>
+    {% set flagged_subjects = subject_trends|selectattr('flagged')|map(attribute='subject')|list %}
+    <div class="stat-value" style="font-size:19px;">{{ flagged_subjects|join(', ') if flagged_subjects else '없음' }}</div>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card-title-row">
+    <div class="card-title">
+      <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/></svg></div>
+      <h2>과목별 추이</h2>
+    </div>
+  </div>
+  <div class="trend-grid">
+    {% for t in subject_trends %}
+    <div class="trend-card {{ 'flagged' if t.flagged else '' }}">
+      <div class="trend-head">
+        <span class="trend-name">{{ t.subject }}</span>
+        <span class="trend-score">{{ t.latest_pct }}<small style="font-family:'Noto Sans KR'; font-size:10.5px;">%</small></span>
+      </div>
+      <svg class="spark" viewBox="0 0 300 64" preserveAspectRatio="none">
+        <polyline points="{{ t.polyline }}" fill="none"
+                  stroke="{{ '#9C4A34' if t.flagged else '#0E3B2C' }}"
+                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        {% set last = t.points[-1] %}
+        <circle cx="{{ last.x }}" cy="{{ last.y }}" r="3.4" fill="{{ '#9C4A34' if t.flagged else '#0E3B2C' }}" />
+      </svg>
+      <div class="trend-meta">
+        <span>{{ t.latest.exam_type }} · {{ t.latest.score_display }}{% if t.latest.exam_date %} · {{ t.latest.exam_date }}{% endif %}</span>
+        {% if t.delta is not none %}
+        <span class="delta-badge {{ 'up' if t.delta > 0 else ('down' if t.delta < 0 else 'flat') }}">
+          {{ '▲' if t.delta > 0 else ('▼' if t.delta < 0 else '-') }} {{ t.delta|abs }}%p
+        </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-title-row">
+    <div class="card-title">
+      <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7 19v-6M12 19V7M17 19v-10"/></svg></div>
+      <h2>전체 시험 기록</h2>
+    </div>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>날짜</th>
+        <th>시험 종류</th>
+        <th>과목</th>
+        <th>점수</th>
+        <th>비고</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in score_rows %}
+      <tr>
+        <td>{{ s.exam_date or '-' }}</td>
+        <td><span class="pill-tag">{{ s.exam_type }}</span></td>
+        <td>{{ s.subject }}</td>
+        <td>{{ s.score_display }}</td>
+        <td>{{ s.note or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+<section class="card">
+  <p class="muted">
+    아직 등록된 성적이 없습니다.<br />
+    선생님이 중간고사·기말고사·월말고사 점수를 등록하시면 이 화면에서 자동으로 확인하실 수 있어요.
+  </p>
+</section>
+{% endif %}
+{% endblock %}

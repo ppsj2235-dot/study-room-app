@@ -1,133 +1,113 @@
 {% extends "base.html" %}
 {% block title %}학부모 페이지 - {{ academy_name }}{% endblock %}
 {% block content %}
-<h1 class="page-title">
-  {{ current_user.name }}님{% if current_user.student_name %} ({{ current_user.student_name }} 학부모님){% endif %}, 환영합니다
-</h1>
+{% set latest = newsletters[0] if newsletters else None %}
 
-<section class="card">
-  <h2>성적</h2>
-  {% if subject_trends %}
-  <p class="muted">중간고사·기말고사·월말고사 점수예요. 선생님이 새 점수를 등록하면 여기에 자동으로 반영됩니다.</p>
-
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">최근 시험 평균</div>
-      <div class="kpi-value">{{ overall_avg }}<small>점 (100점 환산)</small></div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">전체 응시 횟수</div>
-      <div class="kpi-value">{{ score_rows|length }}<small>회</small></div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">확인이 필요한 과목</div>
-      {% set flagged_subjects = subject_trends|selectattr('flagged')|map(attribute='subject')|list %}
-      <div class="kpi-value">{{ flagged_subjects|join(', ') if flagged_subjects else '없음' }}</div>
-    </div>
+<div class="topline">
+  <div>
+    <div class="greet-kicker">Welcome Back</div>
+    <h1 class="greet-h1 serif">
+      {{ current_user.name }}님{% if current_user.student_name %} ({{ current_user.student_name }} 학부모님){% endif %}, 환영합니다
+    </h1>
+    <div class="greet-date">{{ academy_name }}</div>
   </div>
+</div>
 
-  <h2 style="margin-top:22px;">과목별 추이</h2>
-  <div class="subject-trend-grid">
-    {% for t in subject_trends %}
-    <div class="subject-trend-card {{ 'flagged' if t.flagged else '' }}">
-      <div class="std-head">
-        <span class="std-name">{{ t.subject }}</span>
-        <span class="std-score">{{ t.latest_pct }}<small style="font-size:11px;">%</small></span>
-      </div>
-      <svg viewBox="0 0 300 64" preserveAspectRatio="none">
-        <polyline points="{{ t.polyline }}" fill="none"
-                  stroke="{{ '#ec835a' if t.flagged else '#4f6bed' }}"
-                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        {% set last = t.points[-1] %}
-        <circle cx="{{ last.x }}" cy="{{ last.y }}" r="4.5" fill="{{ '#ec835a' if t.flagged else '#3b52c4' }}" />
-      </svg>
-      <div style="display:flex; align-items:center; justify-content:space-between;">
-        <span class="muted" style="font-size:12px;">{{ t.latest.exam_type }} · {{ t.latest.score_display }}{% if t.latest.exam_date %} · {{ t.latest.exam_date }}{% endif %}</span>
-        {% if t.delta is not none %}
-        <span class="delta-badge {{ 'up' if t.delta > 0 else ('down' if t.delta < 0 else 'flat') }}">
-          {{ '▲' if t.delta > 0 else ('▼' if t.delta < 0 else '-') }} {{ t.delta|abs }}%p
-        </span>
-        {% endif %}
+<div class="dash-row">
+  <div class="card">
+    <div class="card-title-row">
+      <div class="card-title">
+        <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 002 2h1l2 5h2l-1.5-5H12l7 4V6l-7 4H6a2 2 0 00-2 2z"/></svg></div>
+        <h2>알림장</h2>
       </div>
     </div>
-    {% endfor %}
+    {% if latest %}
+    <div class="card-desc" style="margin-left:0; font-size:13.5px; margin-bottom:22px;">
+      {{ latest.year }}년 {{ latest.month }}월 알림장이에요. 운영 일정, 공지사항, 수강료 안내를 한 장으로 확인하실 수 있어요.
+    </div>
+    <div class="nl-preview-wrap">
+      <div class="nl-thumb">
+        <iframe src="{{ url_for('newsletter_public_preview', newsletter_id=latest.id) }}"></iframe>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:space-between; min-width:0;">
+        <div>
+          {% if latest.notices %}
+          <div style="font-size:13px; color:var(--text-soft); line-height:1.85; margin-bottom:14px;">
+            {% for n in latest.notices[:3] %}{% if n %}{{ n }}<br />{% endif %}{% endfor %}
+          </div>
+          {% endif %}
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
+            <span class="pill-tag">운영 일정</span>
+            <span class="pill-tag">공지사항</span>
+            <span class="pill-tag">수강료 안내</span>
+          </div>
+        </div>
+        <a class="btn btn-primary btn-block" href="{{ url_for('newsletter_public_download', newsletter_id=latest.id) }}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          이미지로 다운로드
+        </a>
+      </div>
+    </div>
+
+    {% if newsletters|length > 1 %}
+    <details style="margin-top:22px;">
+      <summary class="muted" style="cursor:pointer;">지난 알림장 보기</summary>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>연도</th>
+            <th>월</th>
+            <th>보기</th>
+            <th>다운로드</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for n in newsletters[1:] %}
+          <tr>
+            <td>{{ n.year }}</td>
+            <td>{{ n.month }}월</td>
+            <td><a href="{{ url_for('newsletter_public_preview', newsletter_id=n.id) }}" target="_blank">미리보기</a></td>
+            <td><a href="{{ url_for('newsletter_public_download', newsletter_id=n.id) }}">다운로드</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </details>
+    {% endif %}
+    {% else %}
+    <p class="muted">아직 등록된 알림장이 없습니다. 선생님이 알림장을 만들면 이 화면에서 바로 보실 수 있어요.</p>
+    {% endif %}
   </div>
 
-  <h2 style="margin-top:22px;">전체 시험 기록</h2>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>날짜</th>
-        <th>시험 종류</th>
-        <th>과목</th>
-        <th>점수</th>
-        <th>비고</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for s in score_rows %}
-      <tr>
-        <td>{{ s.exam_date or '-' }}</td>
-        <td><span class="tag">{{ s.exam_type }}</span></td>
-        <td>{{ s.subject }}</td>
-        <td>{{ s.score_display }}</td>
-        <td>{{ s.note or '-' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="muted">
-    아직 등록된 성적이 없습니다.<br />
-    선생님이 중간고사·기말고사·월말고사 점수를 등록하시면 이 화면에서 자동으로 확인하실 수 있어요.
-  </p>
-  {% endif %}
-</section>
-
-<section class="card card-muted">
-  <h2>학습 평가표 / 성적표</h2>
-  <p class="muted">
-    아직 등록된 평가표(이미지)가 없습니다.<br />
-    전문 학원 성적표처럼 이미지로 된 자료는 다음 단계에서 업로드/확인 기능을 이어서 개발할 예정입니다.
-  </p>
-</section>
-
-<section class="card">
-  <h2>알림장</h2>
-  {% if newsletters %}
-  {% set latest = newsletters[0] %}
-  <p class="muted">{{ latest.year }}년 {{ latest.month }}월 알림장이에요. 아래에서 바로 보시거나 이미지로 저장하실 수 있어요.</p>
-
-  <div class="nl-preview-frame" style="width:100%; max-width:410px; height:569px;">
-    <iframe src="{{ url_for('newsletter_public_preview', newsletter_id=latest.id) }}" width="1024" height="1420"></iframe>
+  <div class="card" style="display:flex; flex-direction:column;">
+    <div class="card-title-row">
+      <div class="card-title">
+        <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg></div>
+        <h2>학습 평가표</h2>
+      </div>
+    </div>
+    <div class="card-desc" style="margin-left:0; font-size:13.5px; margin-bottom:20px;">전문 학원 성적표처럼 이미지로 된 평가표예요.</div>
+    <div class="empty-state" style="flex:1; flex-direction:column; text-align:center; align-items:center; justify-content:center; gap:14px; padding:26px 18px;">
+      <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg></div>
+      <div style="line-height:1.8;">아직 등록된 평가표가 없어요.<br />선생님이 올려주시면 여기에 표시돼요.</div>
+    </div>
   </div>
-  <a class="btn btn-primary" style="margin-top:14px;" href="{{ url_for('newsletter_public_download', newsletter_id=latest.id) }}">이미지로 다운로드</a>
+</div>
 
-  {% if newsletters|length > 1 %}
-  <h2 style="margin-top:26px;">지난 알림장</h2>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>연도</th>
-        <th>월</th>
-        <th>보기</th>
-        <th>다운로드</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for n in newsletters[1:] %}
-      <tr>
-        <td>{{ n.year }}</td>
-        <td>{{ n.month }}월</td>
-        <td><a href="{{ url_for('newsletter_public_preview', newsletter_id=n.id) }}" target="_blank">미리보기</a></td>
-        <td><a href="{{ url_for('newsletter_public_download', newsletter_id=n.id) }}">다운로드</a></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% endif %}
-  {% else %}
-  <p class="muted">아직 등록된 알림장이 없습니다. 선생님이 알림장을 만들면 이 화면에서 바로 보실 수 있어요.</p>
-  {% endif %}
-</section>
+{% set contact = latest.contact if latest else None %}
+{% if contact and (contact.phone or contact.address or contact.note) %}
+<div class="card contact-bar">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div class="ic-badge" style="width:36px; height:36px; flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-6h4v6"/></svg></div>
+    <div>
+      <div style="font-weight:700; font-size:14.5px; margin-bottom:4px;">{{ academy_name }} 문의 및 안내</div>
+      <div class="muted" style="font-size:13px;">{{ contact.note or '수업 관련 문의는 전화나 문자로 남겨주시면 확인 후 연락드릴게요.' }}</div>
+    </div>
+  </div>
+  <div style="text-align:right; font-size:13px; color:var(--text); line-height:1.8;">
+    {% if contact.phone %}<div style="font-weight:700; font-size:14.5px;">T. {{ contact.phone }}</div>{% endif %}
+    {% if contact.address %}<div class="muted" style="font-size:12.5px;">{{ contact.address }}</div>{% endif %}
+  </div>
+</div>
+{% endif %}
 {% endblock %}
