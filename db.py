@@ -13,6 +13,7 @@ db_cursor()만 사용하고, SQLite와 PostgreSQL의 차이(플레이스홀더 `
 """
 import os
 import sqlite3
+import threading
 from contextlib import contextmanager
 
 DATABASE_URL = os.environ.get("DATABASE_URL")  # 설정되어 있으면 PostgreSQL 사용
@@ -26,6 +27,27 @@ DB_PATH = os.environ.get(
 if IS_PG:
     import psycopg2
     import psycopg2.extras
+    import psycopg2.pool
+
+    # Neon 같은 원격 PostgreSQL은 매번 새로 연결을 맺을 때(TCP+TLS+인증)
+    # 1~3초 가까이 걸릴 수 있습니다. 화면 하나를 열 때마다 쿼리를 2~3번씩 날리는데
+    # 그때마다 새 연결을 맺으면 페이지 하나 여는 데 수 초씩 걸리게 됩니다.
+    # 그래서 연결을 몇 개 미리 만들어두고 재사용하는 커넥션 풀을 씁니다.
+    _pg_pool = None
+    _pg_pool_lock = threading.Lock()
+
+    def _get_pool():
+        global _pg_pool
+        if _pg_pool is None:
+            with _pg_pool_lock:
+                if _pg_pool is None:
+                    _pg_pool = psycopg2.pool.ThreadedConnectionPool(
+                        1,
+                        int(os.environ.get("DB_POOL_MAX", "5")),
+                        dsn=DATABASE_URL,
+                        cursor_factory=psycopg2.extras.RealDictCursor,
+                    )
+        return _pg_pool
 
 
 class _PGCursor:
@@ -64,7 +86,7 @@ class _PGCursor:
 
 def get_connection():
     if IS_PG:
-        return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        return _get_pool().getconn()
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -74,15 +96,40 @@ def get_connection():
 
 @contextmanager
 def db_cursor(commit=False):
-    conn = get_connection()
+    if not IS_PG:
+        conn = get_connection()
+        try:
+            yield conn.cursor()
+            if commit:
+                conn.commit()
+        finally:
+            conn.close()
+        return
+
+    # PostgreSQL: 풀에서 연결을 빌려쓰고 끝나면 닫지 않고 풀에 반납해서 재사용합니다.
+    # (연결을 새로 맺을 때마다 Neon까지 왕복하는 비용이 커서, 매번 새로 열면
+    #  화면 하나 여는 데도 몇 초씩 걸립니다.)
+    pool = _get_pool()
+    conn = pool.getconn()
+    conn_is_bad = False
     try:
         raw_cur = conn.cursor()
-        cur = _PGCursor(raw_cur) if IS_PG else raw_cur
+        cur = _PGCursor(raw_cur)
         yield cur
         if commit:
             conn.commit()
+    except (psycopg2.OperationalError, psycopg2.InterfaceError):
+        # 연결 자체가 끊어진 경우(장시간 미사용 후 등) - 풀에 돌려주지 않고 버립니다.
+        conn_is_bad = True
+        raise
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            conn_is_bad = True
+        raise
     finally:
-        conn.close()
+        pool.putconn(conn, close=conn_is_bad)
 
 
 # SQLite는 "INTEGER PRIMARY KEY AUTOINCREMENT", PostgreSQL은 "SERIAL PRIMARY KEY"
