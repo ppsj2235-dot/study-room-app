@@ -134,10 +134,10 @@ def render_flyer_png(newsletter, output_path, scale=2):
 
     with sync_playwright() as p:
         browser = p.chromium.launch(**launch_kwargs)
-        page = browser.new_page(viewport={"width": 1024, "height": 1536}, device_scale_factor=scale)
+        page = browser.new_page(viewport={"width": 1024, "height": 1420}, device_scale_factor=scale)
         page.goto("file://" + os.path.abspath(tmp_html))
         page.wait_for_timeout(150)
-        page.screenshot(path=output_path, clip={"x": 0, "y": 0, "width": 1024, "height": 1536})
+        page.screenshot(path=output_path, clip={"x": 0, "y": 0, "width": 1024, "height": 1420})
         browser.close()
 
     os.remove(tmp_html)
