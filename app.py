@@ -175,7 +175,15 @@ def logout():
 @admin_required
 def admin_dashboard():
     parents = models.list_parents()
-    return render_template("admin_dashboard.html", parents=parents)
+    newsletters = nl.list_newsletters()
+    latest_newsletter = newsletters[0] if newsletters else None
+    score_count = len(scores.list_scores())
+    return render_template(
+        "admin_dashboard.html",
+        parents=parents,
+        latest_newsletter=latest_newsletter,
+        score_count=score_count,
+    )
 
 
 @app.route("/admin/parents", methods=["POST"])
@@ -657,18 +665,26 @@ def scores_delete(score_id):
 @app.route("/dashboard")
 @parent_required
 def parent_dashboard():
+    newsletters = nl.list_newsletters()
+    return render_template(
+        "parent_dashboard.html",
+        newsletters=newsletters,
+    )
+
+
+@app.route("/scores")
+@parent_required
+def parent_scores():
     score_rows = scores.list_scores(parent_id=g.user.id)
     subject_trends = scores.build_subject_trends(score_rows)
     overall_avg = None
     if subject_trends:
         overall_avg = round(sum(t["latest_pct"] for t in subject_trends) / len(subject_trends), 1)
-    newsletters = nl.list_newsletters()
     return render_template(
-        "parent_dashboard.html",
+        "parent_scores.html",
         score_rows=score_rows,
         subject_trends=subject_trends,
         overall_avg=overall_avg,
-        newsletters=newsletters,
     )
 
 
