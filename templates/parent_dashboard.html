@@ -98,8 +98,8 @@
   {% set latest = newsletters[0] %}
   <p class="muted">{{ latest.year }}년 {{ latest.month }}월 알림장이에요. 아래에서 바로 보시거나 이미지로 저장하실 수 있어요.</p>
 
-  <div class="nl-preview-frame" style="width:100%; max-width:410px; height:615px;">
-    <iframe src="{{ url_for('newsletter_public_preview', newsletter_id=latest.id) }}" width="1024" height="1536"></iframe>
+  <div class="nl-preview-frame" style="width:100%; max-width:410px; height:569px;">
+    <iframe src="{{ url_for('newsletter_public_preview', newsletter_id=latest.id) }}" width="1024" height="1420"></iframe>
   </div>
   <a class="btn btn-primary" style="margin-top:14px;" href="{{ url_for('newsletter_public_download', newsletter_id=latest.id) }}">이미지로 다운로드</a>
 

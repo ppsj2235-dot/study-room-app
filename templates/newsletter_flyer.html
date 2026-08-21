@@ -24,7 +24,7 @@
   }
   html, body {
     width: 1024px;
-    height: 1536px;
+    height: 1420px;
     background: var(--c-bg);
   }
   body {
@@ -35,7 +35,7 @@
   .page {
     position: relative;
     width: 1024px;
-    height: 1536px;
+    height: 1420px;
     background: var(--c-bg);
     overflow: hidden;
   }
@@ -120,8 +120,10 @@
   .dot.closed { background: var(--c-negative); }
 
   /* ---------- Notice card ---------- */
-  #card-notice { left: 450px; top: 305px; width: 230px; height: 468px; }
-  .notice-item { margin-top: 18px; }
+  #card-notice { left: 450px; top: 305px; width: 230px; height: 468px; display: flex; flex-direction: column; }
+  #card-notice .card-body { flex: 1; display: flex; }
+  .notice-list { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+  .notice-item { margin-top: 0; }
   .notice-row { display: flex; gap: 10px; align-items: flex-start; }
   .notice-num {
     width: 24px; height: 24px; border-radius: 50%; background: var(--c-dark); color: var(--c-bg);
@@ -132,13 +134,15 @@
   .notice-rule { border-bottom: 1px dashed #cfd3c6; margin: 10px 0 0 34px; }
 
   /* ---------- Tuition card ---------- */
-  #card-tuition { left: 700px; top: 305px; width: 304px; height: 468px; }
-  .tuition-label { font-size: 14px; font-weight: 700; color: #26301f; margin-top: 16px; }
+  #card-tuition { left: 700px; top: 305px; width: 304px; height: 468px; display: flex; flex-direction: column; }
+  #card-tuition .card-body { flex: 1; display: flex; }
+  .tuition-fields { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+  .tuition-label { font-size: 14px; font-weight: 700; color: #26301f; margin-top: 0; }
   .tuition-rule { border-bottom: 1px dashed #cfd3c6; margin-top: 8px; }
   .tuition-value { font-size: 14px; color: #3a4433; margin-top: 8px; line-height: 1.5; }
-  .tuition-note { font-size: 13.5px; color: #3a4433; margin-top: 14px; line-height: 1.65; width: calc(100% - 100px); }
+  .tuition-note { font-size: 13.5px; color: #3a4433; line-height: 1.65; width: calc(100% - 100px); }
   .qr-box {
-    position: absolute; right: 22px; top: 232px; width: 88px; height: 88px;
+    position: absolute; right: 22px; bottom: 20px; width: 88px; height: 88px;
     border: 1.5px dashed #b9bdae; border-radius: 10px;
     display: flex; align-items: center; justify-content: center; text-align: center;
     font-size: 12px; color: #6b7267; padding: 6px; line-height: 1.4;
@@ -146,66 +150,38 @@
   }
   .qr-box img { max-width: 100%; max-height: 100%; border-radius: 6px; }
 
-  /* ---------- Row 2: growth / tip / director ---------- */
-  .card-header-bar {
-    position: absolute; left: 0; top: 0; width: 100%; height: 44px;
-    background: var(--c-dark); border-radius: 18px 18px 0 0;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    color: var(--c-bg); font-size: 18px; font-weight: 800;
-  }
-  .card-header-bar.red { background: var(--c-negative); }
-
-  #card-growth { left: 20px; top: 800px; width: 320px; height: 340px; }
-  #card-tip { left: 352px; top: 800px; width: 320px; height: 340px; }
-  #card-director { left: 684px; top: 800px; width: 320px; height: 340px; }
-
-  .growth-list { padding: 58px 20px 16px; }
-  .growth-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; }
-  .growth-icon {
-    width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--c-positive);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .growth-title { font-size: 14.5px; font-weight: 800; color: #1c2a1c; }
-  .growth-desc { font-size: 13px; color: #5b6154; margin-top: 2px; line-height: 1.4; }
-
-  .tip-list { padding: 58px 20px 16px; }
-  .tip-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; }
-  .tip-check {
-    width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--c-negative);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .tip-text { font-size: 14px; font-weight: 700; color: #26301f; line-height: 1.45; padding-top: 3px; }
-
-  .director-body { padding: 58px 20px 16px; font-size: 14px; line-height: 1.85; color: #26301f; font-weight: 500; white-space: pre-line; }
+  /* ---------- Row 2: growth points (가정에서 부탁드립니다와 동일한 가로 배치) ---------- */
+  #card-growth { left: 20px; top: 793px; width: 984px; height: 190px; display: flex; flex-direction: column; }
+  #card-growth .card-head { flex: 0 0 auto; }
+  .growth-cols { flex: 1; display: flex; align-items: center; padding: 0 24px 10px; gap: 18px; }
 
   /* ---------- Row 3: home requests ---------- */
-  #card-home { left: 20px; top: 1160px; width: 984px; height: 200px; }
-  .home-cols { display: flex; padding: 8px 210px 0 24px; gap: 6px; }
+  #card-home { left: 20px; top: 1003px; width: 984px; height: 200px; display: flex; flex-direction: column; }
+  #card-home .card-head { flex: 0 0 auto; }
+  .home-cols { flex: 1; display: flex; align-items: center; padding: 0 210px 10px 24px; gap: 6px; }
   .home-col { flex: 1; min-width: 0; padding-right: 10px; }
-  .home-illust { position: absolute; right: 22px; top: 30px; width: 168px; height: 150px; }
+  .home-illust { position: absolute; right: 22px; top: 50%; transform: translateY(-42%); width: 168px; height: 150px; }
   .home-col .icon-line { width: 30px; height: 30px; margin-bottom: 8px; }
   .home-col .h-title { font-size: 14.5px; font-weight: 800; color: #1c2a1c; margin-bottom: 6px; }
   .home-col .h-desc { font-size: 12px; color: #5b6154; line-height: 1.5; }
 
-  /* ---------- Row 4: quote / contact ---------- */
-  #card-quote { left: 20px; top: 1370px; width: 410px; height: 118px; }
-  #card-contact { left: 450px; top: 1370px; width: 554px; height: 118px; }
+  /* growth-cols도 home-col과 동일한 아이템 스타일을 그대로 사용합니다. */
+
+  /* ---------- Row 4: contact ---------- */
+  #card-contact { left: 20px; top: 1223px; width: 984px; height: 110px; }
   .mini-header {
     height: 40px; border-radius: 18px 18px 0 0; background: var(--c-dark);
     color: var(--c-bg); display: flex; align-items: center; justify-content: center;
     gap: 8px; font-size: 16px; font-weight: 800;
   }
-  .quote-body { padding: 12px 26px 0; text-align: center; }
-  .quote-text { font-size: 13.5px; font-weight: 700; color: #26301f; line-height: 1.6; }
-  .quote-author { font-size: 12px; color: #6b7267; margin-top: 8px; }
-  .contact-body { padding: 14px 26px 0; display: flex; gap: 26px; }
-  .contact-left { font-size: 13px; color: #26301f; line-height: 1.65; font-weight: 700; }
-  .contact-left .phone { font-size: 15px; font-weight: 800; }
-  .contact-right { font-size: 12px; color: #5b6154; line-height: 1.6; flex: 1; }
+  .contact-body { padding: 14px 32px 0; display: flex; align-items: center; gap: 48px; }
+  .contact-left { font-size: 13.5px; color: #26301f; line-height: 1.7; font-weight: 700; flex: 0 0 auto; }
+  .contact-left .phone { font-size: 16px; font-weight: 800; }
+  .contact-right { font-size: 12.5px; color: #5b6154; line-height: 1.65; flex: 1; }
 
   /* ---------- Footer ---------- */
   .footer-bar {
-    position: absolute; left: 20px; right: 20px; top: 1500px; height: 34px;
+    position: absolute; left: 20px; right: 20px; top: 1353px; height: 34px;
     background: var(--c-dark); border-radius: 10px;
     color: var(--c-bg); font-size: 13.5px; font-weight: 600;
     display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -271,15 +247,17 @@
       <h2>공지사항</h2>
     </div>
     <div class="card-body">
-      {% for n in notices %}
-      <div class="notice-item">
-        <div class="notice-row">
-          <div class="notice-num">{{ '%02d'|format(loop.index) }}</div>
-          <div class="notice-text">{{ n }}</div>
+      <div class="notice-list">
+        {% for n in notices %}
+        <div class="notice-item">
+          <div class="notice-row">
+            <div class="notice-num">{{ '%02d'|format(loop.index) }}</div>
+            <div class="notice-text">{{ n }}</div>
+          </div>
+          <div class="notice-rule"></div>
         </div>
-        <div class="notice-rule"></div>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
   </div>
 
@@ -290,15 +268,19 @@
       <h2>수강료 납부 안내</h2>
     </div>
     <div class="card-body">
-      <div class="tuition-label">납부 기간</div>
-      <div class="tuition-rule"></div>
-      <div class="tuition-value">{{ tuition.period }}</div>
-
-      <div class="tuition-label">납부 계좌</div>
-      <div class="tuition-rule"></div>
-      <div class="tuition-value">{{ tuition.account }}</div>
-
-      <div class="tuition-note">{{ tuition.note }}</div>
+      <div class="tuition-fields">
+        <div>
+          <div class="tuition-label">납부 기간</div>
+          <div class="tuition-rule"></div>
+          <div class="tuition-value">{{ tuition.period }}</div>
+        </div>
+        <div>
+          <div class="tuition-label">납부 계좌</div>
+          <div class="tuition-rule"></div>
+          <div class="tuition-value">{{ tuition.account }}</div>
+        </div>
+        <div class="tuition-note">{{ tuition.note }}</div>
+      </div>
     </div>
     <div class="qr-box">
       {% if tuition.qr_image %}
@@ -309,42 +291,24 @@
     </div>
   </div>
 
-  <!-- Card 4: Growth points -->
+  <!-- Card 4: Growth points (가정에서 부탁드립니다와 동일한 가로형) -->
   <div class="card" id="card-growth">
-    <div class="card-header-bar">{{ icon_star|safe }} 성장 포인트</div>
-    <div class="growth-list">
+    <div class="card-head">
+      <div class="icon-badge">{{ icon_star|safe }}</div>
+      <h2>성장 포인트</h2>
+    </div>
+    <div class="growth-cols">
       {% for item in growth_items %}
-      <div class="growth-item">
-        <div class="growth-icon">{{ growth_icons[loop.index0]|safe }}</div>
-        <div>
-          <div class="growth-title">{{ item.title }}</div>
-          <div class="growth-desc">{{ item.desc }}</div>
-        </div>
+      <div class="home-col">
+        <div class="icon-line">{{ growth_icons[loop.index0]|safe }}</div>
+        <div class="h-title">{{ item.title }}</div>
+        <div class="h-desc">{{ item.desc }}</div>
       </div>
       {% endfor %}
     </div>
   </div>
 
-  <!-- Card 5: Tips -->
-  <div class="card" id="card-tip">
-    <div class="card-header-bar red">{{ icon_bulb|safe }} 학습 TIP</div>
-    <div class="tip-list">
-      {% for t in tip_items %}
-      <div class="tip-item">
-        <div class="tip-check">{{ icon_check|safe }}</div>
-        <div class="tip-text">{{ t }}</div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Card 6: Director message -->
-  <div class="card" id="card-director">
-    <div class="card-header-bar">{{ icon_heart|safe }} 원장 한마디</div>
-    <div class="director-body">{{ director_message }}</div>
-  </div>
-
-  <!-- Card 7: Home requests -->
+  <!-- Card 5: Home requests -->
   <div class="card" id="card-home">
     <div class="card-head">
       <div class="icon-badge">{{ icon_house|safe }}</div>
@@ -362,16 +326,7 @@
     <img class="home-illust" src="{{ illust_backpack }}" />
   </div>
 
-  <!-- Card 8: Quote -->
-  <div class="card" id="card-quote">
-    <div class="mini-header">이번 달 명언</div>
-    <div class="quote-body">
-      <div class="quote-text">&ldquo;{{ quote_text }}&rdquo;</div>
-      <div class="quote-author">- {{ quote_author }} -</div>
-    </div>
-  </div>
-
-  <!-- Card 9: Contact -->
+  <!-- Card 6: Contact -->
   <div class="card" id="card-contact">
     <div class="mini-header">{{ icon_phone|safe }} 문의 및 안내</div>
     <div class="contact-body">

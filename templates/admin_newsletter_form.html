@@ -14,7 +14,7 @@
   <h2>미리보기</h2>
   <p class="muted">디자인은 고정되어 있고, 아래 항목들만 수정하면 이 미리보기와 다운로드 이미지에 바로 반영돼요. (저장 후 새로고침됩니다)</p>
   <div class="nl-preview-frame">
-    <iframe src="{{ url_for('newsletter_preview', newsletter_id=newsletter_id) }}" width="1024" height="1536"></iframe>
+    <iframe src="{{ url_for('newsletter_preview', newsletter_id=newsletter_id) }}" width="1024" height="1420"></iframe>
   </div>
 </section>
 
@@ -70,34 +70,6 @@
       </label>
     </div>
     {% endfor %}
-  </section>
-
-  <section class="card">
-    <h2>학습 TIP <span class="optional">(3개, 문구만 수정)</span></h2>
-    <div class="stack-fields">
-      {% for i in range(1, 4) %}
-      <input type="text" name="tip_{{ i }}" value="{{ newsletter.tip_items[i-1] if newsletter.tip_items|length >= i else '' }}" />
-      {% endfor %}
-    </div>
-  </section>
-
-  <section class="card">
-    <h2>원장 한마디 <span class="optional">(계절/시기에 맞춰 자동 추천, 수정 가능)</span></h2>
-    <textarea name="director_message" rows="5">{{ newsletter.director_message }}</textarea>
-    <button type="submit" formaction="{{ url_for('newsletter_regenerate', newsletter_id=newsletter_id, field='director') }}" formnovalidate class="btn btn-small" style="margin-top:10px;">다른 문구 추천받기</button>
-  </section>
-
-  <section class="card">
-    <h2>이번 달 명언 <span class="optional">(매달 자동 추천, 수정 가능)</span></h2>
-    <div class="form-grid">
-      <label>명언
-        <input type="text" name="quote_text" value="{{ newsletter.quote_text }}" />
-      </label>
-      <label>말한 사람
-        <input type="text" name="quote_author" value="{{ newsletter.quote_author }}" />
-      </label>
-    </div>
-    <button type="submit" formaction="{{ url_for('newsletter_regenerate', newsletter_id=newsletter_id, field='quote') }}" formnovalidate class="btn btn-small" style="margin-top:10px;">다른 명언 추천받기</button>
   </section>
 
   <section class="card">
