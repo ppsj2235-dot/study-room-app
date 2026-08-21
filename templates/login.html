@@ -1,27 +1,324 @@
-{% extends "base.html" %}
-{% block title %}로그인 - {{ academy_name }}{% endblock %}
-{% block content %}
-<div class="login-wrap">
-  <div class="login-card">
-    <h1 class="login-title">{{ academy_name }}</h1>
-    <p class="login-subtitle">발급받은 아이디와 비밀번호로 로그인해주세요.</p>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>로그인 - {{ academy_name }}</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic",
+      "Segoe UI", Roboto, sans-serif;
+  }
+  body {
+    display: flex;
+    color: #1f2430;
+  }
 
-    <form method="post" action="{{ url_for('login') }}" class="login-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <label>
-        아이디
-        <input type="text" name="username" autocomplete="username" required autofocus />
-      </label>
-      <label>
-        비밀번호
-        <input type="password" name="password" autocomplete="current-password" required />
-      </label>
-      <button type="submit" class="btn btn-primary btn-block">로그인</button>
-    </form>
+  .login-page {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+  }
 
-    <p class="login-help">
-      계정이 없으신가요? 담당 선생님(관리자)에게 문의해 아이디와 비밀번호를 발급받아주세요.
-    </p>
+  /* ---------- 좌측 히어로 ---------- */
+  .hero {
+    position: relative;
+    flex: 0 0 42%;
+    min-height: 100vh;
+    background: radial-gradient(130% 150% at 15% 8%, #12b886 0%, #0b6e52 42%, #063c30 78%, #052a22 100%);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    padding: 40px 32px;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    width: 420px; height: 420px;
+    border-radius: 50%;
+    background: rgba(214, 245, 200, 0.16);
+    top: -130px; left: -150px;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: rgba(244, 201, 93, 0.14);
+    bottom: -100px; right: -90px;
+  }
+  .hero-dots {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.10) 2px, transparent 2px);
+    background-size: 26px 26px;
+    opacity: 0.5;
+  }
+  .star {
+    position: absolute;
+    color: #F4C95D;
+    font-size: 22px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+  }
+  .hero-badge {
+    position: relative;
+    z-index: 2;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #EAF8EF;
+    padding: 7px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    backdrop-filter: blur(2px);
+  }
+  .hero-card {
+    position: relative;
+    z-index: 2;
+    background: rgba(255,255,255,0.97);
+    border-radius: 26px;
+    padding: 16px 22px 6px;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.28);
+    transform: rotate(-2deg);
+    max-width: 320px;
+  }
+  .hero-card img { display: block; width: 100%; height: auto; }
+  .hero-title {
+    position: relative;
+    z-index: 2;
+    font-size: 34px;
+    font-weight: 900;
+    margin: 24px 0 6px;
+    letter-spacing: -0.5px;
+    text-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    text-align: center;
+  }
+  .hero-tag {
+    position: relative;
+    z-index: 2;
+    font-size: 15px;
+    color: #DEF5E6;
+    margin: 0;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .hero-pills {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .hero-pill {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.28);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 13px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* ---------- 우측 폼 ---------- */
+  .formside {
+    position: relative;
+    flex: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background:
+      radial-gradient(600px 300px at 85% 0%, rgba(18,184,134,0.06), transparent 60%),
+      #FBFAF5;
+  }
+  .bag-float {
+    position: absolute;
+    top: 44px;
+    right: 56px;
+    width: 88px;
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,0.12));
+    transform: rotate(8deg);
+  }
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    background: #ffffff;
+    border-radius: 26px;
+    padding: 40px 36px 34px;
+    box-shadow: 0 24px 60px rgba(6,60,48,0.14), 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid #EFEDE3;
+  }
+  .welcome-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #E7F7EF;
+    color: #0d6b4f;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+  .login-h1 {
+    font-size: 25px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    color: #1f2430;
+  }
+  .login-sub {
+    font-size: 14px;
+    color: #8a8f98;
+    margin: 0 0 22px;
+  }
+
+  .flash-wrap { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .flash { padding: 11px 15px; border-radius: 12px; font-size: 13.5px; font-weight: 600; }
+  .flash-success { background: #E7F7EF; color: #0d6b4f; }
+  .flash-error { background: #FDECEA; color: #c0392b; }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #495066;
+    margin-bottom: 7px;
+  }
+  .field-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1.5px solid #E7E3D6;
+    border-radius: 14px;
+    padding: 12px 16px;
+    background: #FCFCFA;
+  }
+  .field-input:focus-within {
+    border-color: #12b886;
+    background: #fff;
+  }
+  .field-input .ic { width: 18px; height: 18px; color: #A9B69A; flex-shrink: 0; }
+  .field-input input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14.5px;
+    width: 100%;
+    font-family: inherit;
+    color: #1f2430;
+  }
+
+  .login-btn {
+    margin-top: 20px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #17b88a, #0b6e52);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 12px 22px rgba(11,110,82,0.32);
+    letter-spacing: 0.2px;
+    cursor: pointer;
+  }
+  .login-btn:hover { background: linear-gradient(135deg, #13a67c, #095c44); }
+
+  .login-help {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12.5px;
+    color: #9a9ea6;
+    line-height: 1.6;
+  }
+  .login-help b { color: #12866a; }
+
+  @media (max-width: 880px) {
+    .login-page { flex-direction: column; }
+    .hero {
+      flex: none;
+      min-height: 0;
+      width: 100%;
+      padding: 34px 24px 44px;
+    }
+    .hero-card { max-width: 220px; }
+    .hero-title { font-size: 26px; margin-top: 18px; }
+    .formside { min-height: 0; padding: 32px 20px 48px; }
+    .bag-float { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="login-page">
+  <div class="hero">
+    <div class="hero-dots"></div>
+    <div class="star" style="top:56px; left:44px;">&#10022;</div>
+    <div class="star" style="top:96px; right:48px; font-size:16px;">&#10022;</div>
+    <div class="star" style="bottom:160px; left:36px; font-size:14px;">&#10022;</div>
+    <div class="hero-badge">수학 중심 공부방</div>
+    <div class="hero-card"><img src="{{ url_for('static', filename='newsletter/illust_topright.png') }}" alt="" /></div>
+    <div class="hero-title">{{ academy_name }}</div>
+    <p class="hero-tag">기초부터 탄탄하게, 끝까지 함께.<br/>오늘도 반가워요!</p>
+    <div class="hero-pills">
+      <span class="hero-pill">학습 리포트</span>
+      <span class="hero-pill">월간 알림장</span>
+      <span class="hero-pill">학부모 소통</span>
+    </div>
+  </div>
+
+  <div class="formside">
+    <img class="bag-float" src="{{ url_for('static', filename='newsletter/illust_backpack.png') }}" alt="" />
+    <div class="login-card">
+      <div class="welcome-chip">다시 만나 반가워요</div>
+      <h1 class="login-h1">로그인</h1>
+      <p class="login-sub">발급받은 아이디와 비밀번호로 로그인해주세요.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-wrap">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="field">
+          <label for="username">아이디</label>
+          <div class="field-input">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+            <input type="text" id="username" name="username" autocomplete="username" required autofocus placeholder="아이디를 입력하세요" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <div class="field-input">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="비밀번호를 입력하세요" />
+          </div>
+        </div>
+        <button type="submit" class="login-btn">로그인</button>
+      </form>
+
+      <p class="login-help">계정이 없으신가요? <b>담당 선생님</b>에게 문의해<br/>아이디와 비밀번호를 발급받아주세요.</p>
+    </div>
   </div>
 </div>
-{% endblock %}
+</body>
+</html>
