@@ -56,11 +56,20 @@ class _PGCursor:
     - SQLite 스타일 플레이스홀더(`?`)를 PostgreSQL 스타일(`%s`)로 자동 변환합니다.
     - INSERT 문에는 자동으로 `RETURNING id`를 붙이고, 실행 결과를 `lastrowid`로
       노출해서 sqlite3의 `cursor.lastrowid`와 동일하게 쓸 수 있게 합니다.
+    - 풀에서 받은 연결이 죽어있는 경우(Neon 같은 서버리스 Postgres가 오래
+      쓰이지 않아 컴퓨트를 일시 정지시킨 경우 등), 처음 한 번의 실행에 한해
+      풀에서 새 연결을 받아 조용히 재시도합니다. (이미 한 번 살아있다고
+      확인된 뒤 다시 실패하면 더 재시도하지 않고 그대로 에러를 올립니다 -
+      autocommit 모드라 문장 하나하나가 독립적으로 커밋되므로, 실패한 문장만
+      새 연결에서 다시 실행해도 안전합니다.)
     """
 
-    def __init__(self, raw_cursor):
-        self._cur = raw_cursor
+    def __init__(self, pool, conn):
+        self._pool = pool
+        self.conn = conn
+        self._cur = conn.cursor()
         self.lastrowid = None
+        self._retried = False
 
     def execute(self, sql, params=()):
         translated = sql.replace("?", "%s")
@@ -68,7 +77,17 @@ class _PGCursor:
         is_insert = stripped.startswith("INSERT INTO")
         if is_insert and "RETURNING" not in stripped:
             translated = translated.rstrip().rstrip(";") + " RETURNING id"
-        self._cur.execute(translated, params)
+        try:
+            self._cur.execute(translated, params)
+        except (psycopg2.OperationalError, psycopg2.InterfaceError):
+            if self._retried:
+                raise
+            self._retried = True
+            self._pool.putconn(self.conn, close=True)
+            self.conn = self._pool.getconn()
+            self.conn.autocommit = True
+            self._cur = self.conn.cursor()
+            self._cur.execute(translated, params)
         if is_insert:
             row = self._cur.fetchone()
             self.lastrowid = row["id"] if row else None
@@ -109,27 +128,28 @@ def db_cursor(commit=False):
     # PostgreSQL: 풀에서 연결을 빌려쓰고 끝나면 닫지 않고 풀에 반납해서 재사용합니다.
     # (연결을 새로 맺을 때마다 Neon까지 왕복하는 비용이 커서, 매번 새로 열면
     #  화면 하나 여는 데도 몇 초씩 걸립니다.)
+    #
+    # autocommit=True로 씁니다: 이 앱의 쓰기 작업은 전부 문장 하나짜리라
+    # 트랜잭션을 직접 관리할 필요가 없고, 무엇보다 문장이 끝나자마자 바로
+    # 커밋되기 때문에 "커밋도 롤백도 안 된 트랜잭션이 열린 채로" 연결이
+    # 풀에 반납되는 일이 없습니다. (이런 idle-in-transaction 상태로 오래
+    # 놔두면 Neon 같은 서버리스 Postgres가 해당 연결을 서버 쪽에서 끊어버릴
+    # 수 있는데, 그렇게 죽은 연결을 다음 요청이 재사용하면서 로그인 등에서
+    # 500 에러가 났던 게 바로 이 문제였습니다.)
     pool = _get_pool()
     conn = pool.getconn()
+    conn.autocommit = True
+    cur = _PGCursor(pool, conn)
     conn_is_bad = False
     try:
-        raw_cur = conn.cursor()
-        cur = _PGCursor(raw_cur)
         yield cur
-        if commit:
-            conn.commit()
     except (psycopg2.OperationalError, psycopg2.InterfaceError):
-        # 연결 자체가 끊어진 경우(장시간 미사용 후 등) - 풀에 돌려주지 않고 버립니다.
+        # 연결 자체가 끊어진 경우 - _PGCursor.execute()가 이미 한 번 재시도했는데도
+        # 실패한 것이므로 더 재시도하지 않고, 풀에는 돌려주지 않고 버립니다.
         conn_is_bad = True
         raise
-    except Exception:
-        try:
-            conn.rollback()
-        except Exception:
-            conn_is_bad = True
-        raise
     finally:
-        pool.putconn(conn, close=conn_is_bad)
+        pool.putconn(cur.conn, close=conn_is_bad)
 
 
 # SQLite는 "INTEGER PRIMARY KEY AUTOINCREMENT", PostgreSQL은 "SERIAL PRIMARY KEY"

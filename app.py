@@ -1,6 +1,7 @@
 import os
 import secrets
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from functools import wraps
 
@@ -77,6 +78,22 @@ def inject_globals():
         "current_user": g.get("user"),
         "csrf_token": get_csrf_token,
     }
+
+
+def _parallel(*funcs):
+    """서로 관련 없는 DB 조회 함수(인자 없는 callable)들을 동시에 실행해서
+    결과를 순서대로 리스트로 반환합니다.
+
+    원격 DB(Neon 등)라서 조회 한 번마다 네트워크 왕복 비용이 크게 붙는데, 화면 하나가
+    서로 무관한 조회를 여러 번 순서대로 하면 그 비용이 그대로 더해집니다. 순서를 지킬
+    필요가 없는 조회들은 동시에 실행해서 전체 시간을 "가장 느린 조회 하나" 수준으로
+    줄입니다. (models.py 쪽 함수들은 Flask의 g/request/session을 쓰지 않고 DB만
+    다루기 때문에 별도 스레드에서 실행해도 안전합니다.)"""
+    if len(funcs) == 1:
+        return [funcs[0]()]
+    with ThreadPoolExecutor(max_workers=len(funcs)) as ex:
+        futures = [ex.submit(f) for f in funcs]
+        return [f.result() for f in futures]
 
 
 def get_csrf_token():
@@ -174,10 +191,13 @@ def logout():
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
-    parents = models.list_parents()
-    newsletters = nl.list_newsletters()
+    parents, newsletters, score_rows = _parallel(
+        models.list_parents,
+        nl.list_newsletters,
+        scores.list_scores,
+    )
     latest_newsletter = newsletters[0] if newsletters else None
-    score_count = len(scores.list_scores())
+    score_count = len(score_rows)
     return render_template(
         "admin_dashboard.html",
         parents=parents,
@@ -550,8 +570,10 @@ def _parse_score_form():
 @admin_required
 def scores_list():
     parent_id = request.args.get("parent_id", type=int)
-    parents = models.list_parents()
-    score_rows = scores.list_scores(parent_id=parent_id)
+    parents, score_rows = _parallel(
+        models.list_parents,
+        lambda: scores.list_scores(parent_id=parent_id),
+    )
     return render_template(
         "admin_scores_list.html",
         scores=score_rows,
