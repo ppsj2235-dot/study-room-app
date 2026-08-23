@@ -32,7 +32,14 @@ body {
 
 .serif { font-family: 'Noto Serif KR', serif; }
 
-a, a:visited { color: var(--primary); }
+/* :where()로 감싸서 이 규칙의 우선순위(specificity)를 0으로 만듭니다.
+   그냥 "a, a:visited { color: ... }"로 쓰면 방문한 링크(:visited)에 대해
+   ".side-link" 같은 클래스 선택자보다 우선순위가 더 높아져서, 사이드바처럼
+   어두운 배경 위의 링크를 한 번 클릭(방문)하고 나면 글자색이 배경색(진한
+   초록)과 거의 같은 색으로 덮어써져 글자가 안 보이게 되는 문제가 있었습니다.
+   :where()로 우선순위를 0으로 낮추면 다른 모든 클래스 선택자가 항상 이 규칙을
+   이겨서, 방문 여부와 상관없이 각 컴포넌트가 지정한 색이 그대로 적용됩니다. */
+:where(a, a:visited) { color: var(--primary); }
 
 /* 로그인 페이지는 templates/login.html 안에 자체 스타일을 갖고 있어요
    (독립된 풀스크린 디자인이라 base.html/style.css를 쓰지 않습니다). */
