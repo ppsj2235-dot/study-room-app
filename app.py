@@ -2,7 +2,7 @@ import os
 import secrets
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, timedelta
 from functools import wraps
 
 from flask import (
@@ -37,6 +37,11 @@ app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "0") == "1"
+
+# 30분 동안 활동(요청)이 없으면 자동 로그아웃됩니다. login()에서 session.permanent = True로
+# 설정하고, SESSION_REFRESH_EACH_REQUEST(기본값 True)에 의해 매 요청마다 만료 시각이
+# 30분 뒤로 갱신되기 때문에, "계속 쓰는 동안은 로그인 유지 / 30분간 조용하면 로그아웃"이 됩니다.
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
 
 ACADEMY_NAME = os.environ.get("ACADEMY_NAME", "우리 공부방")
 
@@ -170,6 +175,7 @@ def login():
             return render_template("login.html"), 401
 
         session.clear()
+        session.permanent = True  # 30분간 활동 없으면 자동 로그아웃 (PERMANENT_SESSION_LIFETIME 참고)
         session["user_id"] = user.id
         flash(f"{user.name}님, 환영합니다.", "success")
 
