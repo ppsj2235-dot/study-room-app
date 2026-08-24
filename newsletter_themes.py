@@ -140,6 +140,18 @@ THEMES = {
         "border": "#EBDED8",
         "frame_border": "#E8DAD3",
     },
+    "gimpopay_x": {
+        # 코랄 + 딥그린과 색감은 동일하고, 김포페이 QR 없이 쓰는 달을 구분하기 위한 이름만 다른 테마
+        "label": "김포페이X",
+        "dark": "#526B5B",
+        "positive": "#D98670",
+        "positive_light": "#EBC2AE",
+        "negative": "#B23F35",
+        "bg": "#FAF8F7",
+        "card_bg": "#FCFAFA",
+        "border": "#EBDED8",
+        "frame_border": "#E8DAD3",
+    },
 }
 
 
