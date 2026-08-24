@@ -141,6 +141,8 @@
   .tuition-rule { border-bottom: 1px dashed #cfd3c6; margin-top: 8px; }
   .tuition-value { font-size: 14px; color: #3a4433; margin-top: 8px; line-height: 1.5; }
   .tuition-note { font-size: 13.5px; color: #3a4433; line-height: 1.65; width: calc(100% - 100px); }
+  /* QR 이미지가 아직 없어서 qr-box 자체를 렌더링하지 않을 때는 안내 문구가 카드 전체 너비를 씀 */
+  .tuition-note--full { width: 100%; }
   .qr-box {
     position: absolute; right: 22px; bottom: 20px; width: 88px; height: 88px;
     border: 1.5px dashed #b9bdae; border-radius: 10px;
@@ -279,16 +281,14 @@
           <div class="tuition-rule"></div>
           <div class="tuition-value">{{ tuition.account }}</div>
         </div>
-        <div class="tuition-note">{{ tuition.note }}</div>
+        <div class="tuition-note{{ '' if tuition.qr_image else ' tuition-note--full' }}">{{ tuition.note }}</div>
       </div>
     </div>
+    {% if tuition.qr_image %}
     <div class="qr-box">
-      {% if tuition.qr_image %}
-        <img src="{{ tuition.qr_image }}" />
-      {% else %}
-        {{ tuition.qr_label }}
-      {% endif %}
+      <img src="{{ tuition.qr_image }}" />
     </div>
+    {% endif %}
   </div>
 
   <!-- Card 4: Growth points (가정에서 부탁드립니다와 동일한 가로형) -->
