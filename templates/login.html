@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="color-scheme" content="light" />
 <title>로그인 - {{ academy_name }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; }
   html, body {
@@ -289,23 +292,28 @@
     margin-bottom: 30px;
   }
   @keyframes login-loading-spin { to { transform: rotate(360deg); } }
+  .login-loading-quote-wrap {
+    max-width: calc(100vw - 48px);
+    padding: 0 24px;
+    overflow: hidden;
+  }
   .login-loading-quote {
-    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
+    display: inline-block;
+    font-family: 'Noto Serif KR', "Apple SD Gothic Neo", "Malgun Gothic", serif;
     color: #EAF8EF;
-    font-size: 16.5px;
     font-weight: 500;
-    line-height: 1.75;
-    max-width: 320px;
-    text-align: center;
-    padding: 0 28px;
-    transition: opacity 0.4s ease;
+    letter-spacing: 0.01em;
+    font-size: 17px;
+    white-space: nowrap;
   }
 </style>
 </head>
 <body>
 <div class="login-loading-overlay" id="loginLoadingOverlay" aria-hidden="true">
   <div class="login-loading-spinner"></div>
-  <div class="login-loading-quote" id="loginLoadingQuote"></div>
+  <div class="login-loading-quote-wrap">
+    <div class="login-loading-quote" id="loginLoadingQuote"></div>
+  </div>
 </div>
 <div class="login-page">
   <div class="hero">
@@ -380,25 +388,20 @@
     var btn = document.getElementById("loginBtn");
 
     function startLoadingScreen() {
-      var order = QUOTES.slice();
-      // 처음 보여줄 문구를 매번 다르게 섞습니다.
-      for (var i = order.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
-      }
-      var idx = 0;
-      quoteEl.textContent = order[idx];
+      // 로그인 한 번에 문구 하나만 무작위로 보여줍니다 (여러 개를 번갈아 보여주지 않음).
+      quoteEl.style.transform = "none";
+      quoteEl.textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)];
       overlay.classList.add("active");
       overlay.setAttribute("aria-hidden", "false");
 
-      setInterval(function () {
-        idx = (idx + 1) % order.length;
-        quoteEl.style.opacity = 0;
-        setTimeout(function () {
-          quoteEl.textContent = order[idx];
-          quoteEl.style.opacity = 1;
-        }, 350);
-      }, 1700);
+      // 문구가 화면 폭보다 길면(주로 작은 화면), 한 줄을 유지한 채로 딱 맞을
+      // 때까지만 글자 크기를 줄입니다 (짧은 문구는 원래 크기 그대로 보여줌).
+      var wrap = quoteEl.parentElement;
+      var available = wrap.clientWidth;
+      var actual = quoteEl.scrollWidth;
+      if (actual > available) {
+        quoteEl.style.transform = "scale(" + (available / actual) + ")";
+      }
     }
 
     if (form && btn) {
