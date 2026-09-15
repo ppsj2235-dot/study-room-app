@@ -32,7 +32,7 @@ DEFAULT_TUITION = {
     "account": "",
     "note": "",
     "qr_label": "QR코드",
-    "qr_image_path": None,
+    "qr_image_data": None,
 }
 
 DEFAULT_CONTACT = {"phone": "", "address": "", "note": ""}

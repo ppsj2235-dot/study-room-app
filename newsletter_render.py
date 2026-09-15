@@ -71,7 +71,7 @@ def render_flyer_html(newsletter):
         extra_open_days=newsletter.get("extra_open_days"),
     )
 
-    qr_path = newsletter.get("tuition", {}).get("qr_image_path")
+    qr_data_uri = newsletter.get("tuition", {}).get("qr_image_data")
     theme_key = newsletter.get("theme") or DEFAULT_THEME
     theme_colors = get_theme_colors(theme_key)
 
@@ -91,7 +91,8 @@ def render_flyer_html(newsletter):
             "account": newsletter.get("tuition", {}).get("account", ""),
             "note": newsletter.get("tuition", {}).get("note", ""),
             "qr_label": newsletter.get("tuition", {}).get("qr_label", "QR코드"),
-            "qr_image": _file_to_data_uri(qr_path) if qr_path else "",
+            # qr_image_data는 이미 base64 데이터 URI로 DB에 저장돼있어서 파일 변환이 필요 없음
+            "qr_image": qr_data_uri or "",
         },
         "growth_items": newsletter.get("growth_items", []),
         "tip_items": newsletter.get("tip_items", []),

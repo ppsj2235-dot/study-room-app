@@ -1,3 +1,4 @@
+import base64
 import os
 import secrets
 import tempfile
@@ -269,14 +270,14 @@ def reset_parent_password(user_id):
     return redirect(url_for("admin_dashboard"))
 
 
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "newsletter", "uploads")
+MAX_QR_IMAGE_BYTES = 3 * 1024 * 1024  # 3MB - DB에 base64로 저장하므로 넉넉하되 과한 업로드는 막음
 
 
 def _form_list(prefix, count):
     return [request.form.get(f"{prefix}_{i}", "").strip() for i in range(1, count + 1)]
 
 
-def _parse_newsletter_form(form, existing_qr_path=None):
+def _parse_newsletter_form(form, existing_qr_data=None):
     notices = [n for n in _form_list("notice", 5) if n]
     if not notices:
         notices = [""]
@@ -305,7 +306,7 @@ def _parse_newsletter_form(form, existing_qr_path=None):
             "account": form.get("tuition_account", "").strip(),
             "note": form.get("tuition_note", "").strip(),
             "qr_label": form.get("tuition_qr_label", "").strip() or "QR코드",
-            "qr_image_path": existing_qr_path,
+            "qr_image_data": existing_qr_data,
         },
         "growth_items": growth_items,
         "tip_items": tip_items,
@@ -374,15 +375,22 @@ def newsletter_new():
     return redirect(url_for("newsletter_edit", newsletter_id=newsletter_id))
 
 
-def _save_qr_image(file_storage, newsletter_id):
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    ext = os.path.splitext(secure_filename(file_storage.filename))[1].lower() or ".png"
-    if ext not in (".png", ".jpg", ".jpeg"):
-        ext = ".png"
-    filename = f"qr_{newsletter_id}{ext}"
-    path = os.path.join(UPLOAD_DIR, filename)
-    file_storage.save(path)
-    return path
+def _qr_image_to_data_uri(file_storage):
+    """QR 이미지를 디스크 파일이 아니라 base64 데이터 URI 문자열로 변환해서 반환합니다.
+
+    Render 같은 배포 환경은 재배포할 때마다 디스크 내용이 초기화되기 때문에,
+    예전처럼 파일로 저장하면 코드를 다시 배포할 때마다 QR 이미지가 사라지는
+    문제가 있었습니다. 알림장의 다른 내용(공지사항, 계좌번호 등)과 똑같이
+    데이터베이스(newsletters 테이블의 data 컬럼)에 함께 저장해두면, 코드를
+    몇 번을 다시 배포하더라도 QR 이미지가 사라지지 않습니다.
+    """
+    ext = os.path.splitext(secure_filename(file_storage.filename))[1].lower().lstrip(".")
+    mime = "png" if ext not in ("jpg", "jpeg", "webp") else ("jpeg" if ext == "jpg" else ext)
+    raw = file_storage.read(MAX_QR_IMAGE_BYTES + 1)
+    if len(raw) > MAX_QR_IMAGE_BYTES:
+        raise ValueError("QR 이미지 파일이 너무 큽니다 (3MB 이하로 올려주세요).")
+    b64 = base64.b64encode(raw).decode("ascii")
+    return f"data:image/{mime};base64,{b64}"
 
 
 @app.route("/admin/newsletters/<int:newsletter_id>/edit")
@@ -411,14 +419,18 @@ def newsletter_update(newsletter_id):
     if not existing:
         abort(404)
 
-    existing_qr_path = existing.get("tuition", {}).get("qr_image_path")
-    data = _parse_newsletter_form(request.form, existing_qr_path=existing_qr_path)
+    existing_qr_data = existing.get("tuition", {}).get("qr_image_data")
+    data = _parse_newsletter_form(request.form, existing_qr_data=existing_qr_data)
 
     qr_file = request.files.get("qr_image")
     if qr_file and qr_file.filename:
-        data["tuition"]["qr_image_path"] = _save_qr_image(qr_file, newsletter_id)
+        try:
+            data["tuition"]["qr_image_data"] = _qr_image_to_data_uri(qr_file)
+        except ValueError as e:
+            flash(str(e), "error")
+            return redirect(url_for("newsletter_edit", newsletter_id=newsletter_id))
     if request.form.get("remove_qr_image") == "1":
-        data["tuition"]["qr_image_path"] = None
+        data["tuition"]["qr_image_data"] = None
 
     nl.update_newsletter(newsletter_id, data)
     flash("알림장이 저장되었습니다.", "success")
