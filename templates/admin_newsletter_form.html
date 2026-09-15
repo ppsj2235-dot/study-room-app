@@ -51,7 +51,7 @@
         <input type="text" name="tuition_qr_label" value="{{ newsletter.tuition.qr_label }}" placeholder="예: 계좌 QR코드" />
       </label>
     </div>
-    {% if newsletter.tuition.qr_image_path %}
+    {% if newsletter.tuition.qr_image_data %}
     <label class="checkbox-label" style="margin-top:10px;">
       <input type="checkbox" name="remove_qr_image" value="1" /> 업로드된 QR 이미지 삭제
     </label>
