@@ -143,14 +143,16 @@
   /* QR 유무와 상관없이 안내 문구는 항상 카드 전체 너비를 씀 (QR은 아래 별도 줄에 표시) */
   .tuition-note { font-size: 13.5px; color: #3a4433; line-height: 1.65; width: 100%; }
   .qr-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+  /* 박스 크기를 정사각형으로 고정하지 않고 이미지 비율에 맞춰 딱 맞게 감싸도록 함
+     (정사각형으로 고정하면 QR 이미지 아래 "느루공부방" 같은 캡션 텍스트 때문에
+     이미지가 세로로 길어져서, 박스 안에 빈 여백이 생기고 QR이 작아 보였음) */
   .qr-box {
-    width: 150px; height: 150px;
+    display: inline-flex; align-items: center; justify-content: center;
     border: 1.5px dashed #b9bdae; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; text-align: center;
-    font-size: 12px; color: #6b7267; padding: 6px; line-height: 1.4;
+    padding: 8px;
     background: #fff;
   }
-  .qr-box img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+  .qr-box img { height: 175px; width: auto; max-width: 220px; border-radius: 6px; display: block; }
 
   /* ---------- Row 2: growth points (가정에서 부탁드립니다와 동일한 가로 배치) ---------- */
   #card-growth { left: 20px; top: 793px; width: 984px; height: 190px; display: flex; flex-direction: column; }
