@@ -11,6 +11,7 @@ from flask import (
     abort,
     flash,
     g,
+    make_response,
     redirect,
     render_template,
     request,
@@ -672,6 +673,15 @@ def scores_delete(score_id):
 # 학부모에게 카카오톡 등으로 개별 전달하는 방식이라, 학부모 화면/로그인은
 # 따로 만들지 않습니다.
 # ---------------------------------------------------------------------------
+
+def _no_store(resp):
+    """브라우저/중간 프록시가 성적표 화면을 캐싱해서, 구글시트를 고쳐도
+    예전 점수가 계속 보이는 일이 없도록 매 응답에 캐시 금지 헤더를 붙입니다."""
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
+
+
 @app.route("/admin/reports/refresh", methods=["POST"])
 @admin_required
 def reports_refresh():
@@ -690,12 +700,13 @@ def reports_list():
     for g_key in rpt.GRADES:
         students = rpt.list_students(exam, g_key) if exam else []
         grades_data.append({"grade": g_key, "label": rpt.GRADE_LABELS[g_key], "students": students})
-    return render_template(
+    resp = make_response(render_template(
         "admin_reports_list.html",
         exam=exam,
         exams=rpt.EXAMS,
         grades_data=grades_data,
-    )
+    ))
+    return _no_store(resp)
 
 @app.route("/admin/reports/<grade>/<student_name>/preview")
 @admin_required
@@ -704,7 +715,8 @@ def report_preview(grade, student_name):
     report = rpt.build_report(grade, student_name, exam_id=exam_id)
     if not report:
         abort(404)
-    return render_report_html(report, ACADEMY_NAME)
+    resp = make_response(render_report_html(report, ACADEMY_NAME))
+    return _no_store(resp)
 
 @app.route("/admin/reports/<grade>/<student_name>/download")
 @admin_required
@@ -717,12 +729,16 @@ def report_download(grade, student_name):
     os.close(fd)
     render_report_png(report, ACADEMY_NAME, tmp_path)
     download_name = f"{ACADEMY_NAME}_{report['grade_label']}_{student_name}_{report['exam']['label']}_성적표.png"
-    return send_file(
-        tmp_path,
-        mimetype="image/png",
-        as_attachment=True,
-        download_name=download_name,
+    resp = make_response(
+        send_file(
+            tmp_path,
+            mimetype="image/png",
+            as_attachment=True,
+            download_name=download_name,
+            max_age=0,
+        )
     )
+    return _no_store(resp)
 
 @app.route("/dashboard")
 @parent_required
