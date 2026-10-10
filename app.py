@@ -23,11 +23,13 @@ from dotenv import load_dotenv
 
 import models
 import models_newsletter as nl
+import models_report as rpt
 import models_scores as scores
 from content_bank import suggest_director_message, suggest_quote
 from db import init_db
 from newsletter_render import render_flyer_html, render_flyer_png, THEME_ASSETS
 from newsletter_themes import DEFAULT_THEME, THEMES, theme_choices
+from report_render import render_report_html, render_report_png
 
 load_dotenv()
 
@@ -46,7 +48,6 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
 
 ACADEMY_NAME = os.environ.get("ACADEMY_NAME", "우리 공부방")
 
-
 # ---------------------------------------------------------------------------
 # 초기화: DB 테이블 생성 + 최초 관리자 계정 자동 생성
 # ---------------------------------------------------------------------------
@@ -64,9 +65,7 @@ def bootstrap():
             )
             print(f"[bootstrap] 초기 관리자 계정 '{admin_username}' 생성됨")
 
-
 bootstrap()
-
 
 # ---------------------------------------------------------------------------
 # 공통 유틸: 로그인/권한 체크, CSRF 토큰
@@ -76,7 +75,6 @@ def load_logged_in_user():
     user_id = session.get("user_id")
     g.user = models.get_user_by_id(user_id) if user_id else None
 
-
 @app.context_processor
 def inject_globals():
     return {
@@ -84,7 +82,6 @@ def inject_globals():
         "current_user": g.get("user"),
         "csrf_token": get_csrf_token,
     }
-
 
 def _parallel(*funcs):
     """서로 관련 없는 DB 조회 함수(인자 없는 callable)들을 동시에 실행해서
@@ -101,18 +98,15 @@ def _parallel(*funcs):
         futures = [ex.submit(f) for f in funcs]
         return [f.result() for f in futures]
 
-
 def get_csrf_token():
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(16)
     return session["csrf_token"]
 
-
 def check_csrf():
     token = request.form.get("csrf_token")
     if not token or token != session.get("csrf_token"):
         abort(400, description="잘못된 요청입니다. 새로고침 후 다시 시도해주세요.")
-
 
 def login_required(view):
     @wraps(view)
@@ -122,7 +116,6 @@ def login_required(view):
         return view(*args, **kwargs)
 
     return wrapped
-
 
 def admin_required(view):
     @wraps(view)
@@ -135,7 +128,6 @@ def admin_required(view):
 
     return wrapped
 
-
 def parent_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -147,7 +139,6 @@ def parent_required(view):
 
     return wrapped
 
-
 # ---------------------------------------------------------------------------
 # 라우트
 # ---------------------------------------------------------------------------
@@ -158,7 +149,6 @@ def index():
     if g.user.is_admin:
         return redirect(url_for("admin_dashboard"))
     return redirect(url_for("parent_dashboard"))
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -187,13 +177,11 @@ def login():
 
     return render_template("login.html")
 
-
 @app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     flash("로그아웃 되었습니다.", "success")
     return redirect(url_for("login"))
-
 
 @app.route("/admin")
 @admin_required
@@ -211,7 +199,6 @@ def admin_dashboard():
         latest_newsletter=latest_newsletter,
         score_count=score_count,
     )
-
 
 @app.route("/admin/parents", methods=["POST"])
 @admin_required
@@ -247,7 +234,6 @@ def create_parent():
     flash(f"학부모 계정 '{username}' 이(가) 생성되었습니다.", "success")
     return redirect(url_for("admin_dashboard"))
 
-
 @app.route("/admin/parents/<int:user_id>/delete", methods=["POST"])
 @admin_required
 def delete_parent(user_id):
@@ -255,7 +241,6 @@ def delete_parent(user_id):
     models.delete_user(user_id)
     flash("계정이 삭제되었습니다.", "success")
     return redirect(url_for("admin_dashboard"))
-
 
 @app.route("/admin/parents/<int:user_id>/reset-password", methods=["POST"])
 @admin_required
@@ -269,13 +254,10 @@ def reset_parent_password(user_id):
     flash("비밀번호가 재설정되었습니다.", "success")
     return redirect(url_for("admin_dashboard"))
 
-
 MAX_QR_IMAGE_BYTES = 3 * 1024 * 1024  # 3MB - DB에 base64로 저장하므로 넉넉하되 과한 업로드는 막음
-
 
 def _form_list(prefix, count):
     return [request.form.get(f"{prefix}_{i}", "").strip() for i in range(1, count + 1)]
-
 
 def _parse_newsletter_form(form, existing_qr_data=None):
     notices = [n for n in _form_list("notice", 5) if n]
@@ -324,7 +306,6 @@ def _parse_newsletter_form(form, existing_qr_data=None):
     }
     return data
 
-
 @app.route("/admin/newsletters")
 @admin_required
 def newsletter_list():
@@ -348,7 +329,6 @@ def newsletter_list():
         default_month=default_month,
         year_options=year_options,
     )
-
 
 @app.route("/admin/newsletters/new")
 @admin_required
@@ -374,7 +354,6 @@ def newsletter_new():
     flash(f"{year}년 {month}월 알림장 초안을 만들었습니다. 내용을 채우고 저장해주세요.", "success")
     return redirect(url_for("newsletter_edit", newsletter_id=newsletter_id))
 
-
 def _qr_image_to_data_uri(file_storage):
     """QR 이미지를 디스크 파일이 아니라 base64 데이터 URI 문자열로 변환해서 반환합니다.
 
@@ -392,7 +371,6 @@ def _qr_image_to_data_uri(file_storage):
     b64 = base64.b64encode(raw).decode("ascii")
     return f"data:image/{mime};base64,{b64}"
 
-
 @app.route("/admin/newsletters/<int:newsletter_id>/edit")
 @admin_required
 def newsletter_edit(newsletter_id):
@@ -409,7 +387,6 @@ def newsletter_edit(newsletter_id):
         theme_choices=theme_choices(),
         theme_assets=THEME_ASSETS,
     )
-
 
 @app.route("/admin/newsletters/<int:newsletter_id>", methods=["POST"])
 @admin_required
@@ -436,7 +413,6 @@ def newsletter_update(newsletter_id):
     flash("알림장이 저장되었습니다.", "success")
     return redirect(url_for("newsletter_edit", newsletter_id=newsletter_id))
 
-
 @app.route("/admin/newsletters/<int:newsletter_id>/delete", methods=["POST"])
 @admin_required
 def newsletter_delete(newsletter_id):
@@ -444,7 +420,6 @@ def newsletter_delete(newsletter_id):
     nl.delete_newsletter(newsletter_id)
     flash("알림장이 삭제되었습니다.", "success")
     return redirect(url_for("newsletter_list"))
-
 
 @app.route("/admin/newsletters/<int:newsletter_id>/regenerate/<field>", methods=["POST"])
 @admin_required
@@ -473,7 +448,6 @@ def newsletter_regenerate(newsletter_id, field):
     nl.update_newsletter(newsletter_id, data)
     return redirect(url_for("newsletter_edit", newsletter_id=newsletter_id) + "#" + field)
 
-
 @app.route("/admin/newsletters/<int:newsletter_id>/preview")
 @admin_required
 def newsletter_preview(newsletter_id):
@@ -481,7 +455,6 @@ def newsletter_preview(newsletter_id):
     if not data:
         abort(404)
     return render_flyer_html(data)
-
 
 @app.route("/admin/newsletters/<int:newsletter_id>/download")
 @admin_required
@@ -500,7 +473,6 @@ def newsletter_download(newsletter_id):
         download_name=download_name,
     )
 
-
 # 알림장은 모든 학부모가 공통으로 보는 자료라서, 학부모별로 업로드하지 않고
 # 관리자가 한 번만 만들어두면 로그인한 학부모 전원이 아래 경로로 볼 수 있습니다.
 @app.route("/newsletters/<int:newsletter_id>/view")
@@ -510,7 +482,6 @@ def newsletter_public_preview(newsletter_id):
     if not data:
         abort(404)
     return render_flyer_html(data)
-
 
 @app.route("/newsletters/<int:newsletter_id>/download")
 @login_required
@@ -528,7 +499,6 @@ def newsletter_public_download(newsletter_id):
         as_attachment=True,
         download_name=download_name,
     )
-
 
 def _parse_score_form():
     errors = []
@@ -583,7 +553,6 @@ def _parse_score_form():
         "note": note,
     }
 
-
 @app.route("/admin/scores")
 @admin_required
 def scores_list():
@@ -599,7 +568,6 @@ def scores_list():
         selected_parent_id=parent_id,
         exam_types=scores.EXAM_TYPES,
     )
-
 
 @app.route("/admin/scores/new", methods=["GET", "POST"])
 @admin_required
@@ -644,7 +612,6 @@ def scores_new():
         subject_suggestions=scores.SUBJECT_SUGGESTIONS,
         form_data={"parent_id": default_parent_id} if default_parent_id else None,
     )
-
 
 @app.route("/admin/scores/<int:score_id>/edit", methods=["GET", "POST"])
 @admin_required
@@ -692,7 +659,6 @@ def scores_edit(score_id):
         form_data=None,
     )
 
-
 @app.route("/admin/scores/<int:score_id>/delete", methods=["POST"])
 @admin_required
 def scores_delete(score_id):
@@ -701,6 +667,53 @@ def scores_delete(score_id):
     flash("성적이 삭제되었습니다.", "success")
     return redirect(url_for("scores_list"))
 
+# ---------------------------------------------------------------------------
+# 성적표 (구글시트 기반 학습 평가표) - 관리자 전용. 관리자가 다운로드해서
+# 학부모에게 카카오톡 등으로 개별 전달하는 방식이라, 학부모 화면/로그인은
+# 따로 만들지 않습니다.
+# ---------------------------------------------------------------------------
+@app.route("/admin/reports")
+@admin_required
+def reports_list():
+    exam_id = request.args.get("exam")
+    exam = rpt.get_exam(exam_id) if exam_id else rpt.latest_exam()
+    grades_data = []
+    for g_key in rpt.GRADES:
+        students = rpt.list_students(exam, g_key) if exam else []
+        grades_data.append({"grade": g_key, "label": rpt.GRADE_LABELS[g_key], "students": students})
+    return render_template(
+        "admin_reports_list.html",
+        exam=exam,
+        exams=rpt.EXAMS,
+        grades_data=grades_data,
+    )
+
+@app.route("/admin/reports/<grade>/<student_name>/preview")
+@admin_required
+def report_preview(grade, student_name):
+    exam_id = request.args.get("exam")
+    report = rpt.build_report(grade, student_name, exam_id=exam_id)
+    if not report:
+        abort(404)
+    return render_report_html(report, ACADEMY_NAME)
+
+@app.route("/admin/reports/<grade>/<student_name>/download")
+@admin_required
+def report_download(grade, student_name):
+    exam_id = request.args.get("exam")
+    report = rpt.build_report(grade, student_name, exam_id=exam_id)
+    if not report:
+        abort(404)
+    fd, tmp_path = tempfile.mkstemp(suffix=".png")
+    os.close(fd)
+    render_report_png(report, ACADEMY_NAME, tmp_path)
+    download_name = f"{ACADEMY_NAME}_{report['grade_label']}_{student_name}_{report['exam']['label']}_성적표.png"
+    return send_file(
+        tmp_path,
+        mimetype="image/png",
+        as_attachment=True,
+        download_name=download_name,
+    )
 
 @app.route("/dashboard")
 @parent_required
@@ -710,7 +723,6 @@ def parent_dashboard():
         "parent_dashboard.html",
         newsletters=newsletters,
     )
-
 
 @app.route("/scores")
 @parent_required
@@ -727,16 +739,13 @@ def parent_scores():
         overall_avg=overall_avg,
     )
 
-
 @app.errorhandler(403)
 def forbidden(e):
     return render_template("error.html", code=403, message="접근 권한이 없습니다."), 403
 
-
 @app.errorhandler(404)
 def not_found(e):
     return render_template("error.html", code=404, message="페이지를 찾을 수 없습니다."), 404
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
