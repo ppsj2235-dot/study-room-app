@@ -18,7 +18,6 @@
     --brand-dark:    #526B5B;
     --brand-pale:    #EEF2EF;
     --child:         #eb6834;   /* 우리 아이 */
-    --avg:           #2a78d6;   /* 전체 평균 */
     --good:          #0ca30c;
     --bad:           #c23b3b;
     --grid:          #ece3de;
@@ -98,6 +97,7 @@
 
   /* 총평 */
   .summary-text { font-size: 13.5px; line-height: 1.75; color: var(--text-primary); margin: 0 0 16px; }
+  .summary-placeholder { color: var(--text-muted); font-style: italic; }
   .wrong-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
   .wrong-item {
     background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px;
@@ -130,7 +130,7 @@
     </div>
 
     <div class="section">
-      <div class="section-title">01 · 총점 비교</div>
+      <div class="section-title">01 · 총점</div>
       <div class="score-row">
         <div class="score-hero">
           <div class="num">{{ '%g'|format(report.total_score) }}<span>/100</span></div>
@@ -142,18 +142,6 @@
             <span class="val">{{ '%g'|format(report.total_score) }}점</span>
           </div>
           <div class="vs-track"><div class="vs-fill" style="width:{{ report.total_score }}%; background:var(--child)"></div></div>
-          <div class="vs-row">
-            <span class="lab"><span class="dot" style="background:var(--avg)"></span>같은 시험 응시자 평균</span>
-            <span class="val">{{ '%g'|format(report.class_avg) }}점</span>
-          </div>
-          <div class="vs-track"><div class="vs-fill" style="width:{{ report.class_avg }}%; background:var(--avg)"></div></div>
-          {% if report.diff_vs_avg > 0 %}
-          <div class="vs-note up">▲ 전체 평균보다 {{ '%g'|format(report.diff_vs_avg) }}점 높아요</div>
-          {% elif report.diff_vs_avg < 0 %}
-          <div class="vs-note down">▼ 전체 평균보다 {{ '%g'|format(-report.diff_vs_avg) }}점 낮아요</div>
-          {% else %}
-          <div class="vs-note flat">● 전체 평균과 같아요</div>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -162,18 +150,16 @@
       <div class="section-title">02 · 문제 유형(단원)별 점수</div>
       <div class="unit-legend">
         <span><span class="dot" style="background:var(--child)"></span>{{ report.student_name }} 학생</span>
-        <span><span class="dot" style="background:var(--avg)"></span>응시자 평균</span>
       </div>
 
       {% for u in report.unit_stats %}
       <div class="unit">
         <div class="unit-top">
           <span class="unit-name">{{ u.name }}</span>
-          <span class="unit-nums">{{ '%g'|format(u.score) }} / {{ '%g'|format(u.max) }}점 · 평균 {{ '%g'|format(u.avg) }}점</span>
+          <span class="unit-nums">{{ '%g'|format(u.score) }} / {{ '%g'|format(u.max) }}점</span>
         </div>
         <div class="unit-bars">
           <div class="unit-bar-track"><div class="unit-bar-fill" style="width:{{ u.pct }}%; background:var(--child)"></div></div>
-          <div class="unit-bar-track"><div class="unit-bar-fill" style="width:{{ u.avg_pct }}%; background:var(--avg)"></div></div>
         </div>
       </div>
       {% endfor %}
@@ -215,7 +201,11 @@
 
     <div class="section">
       <div class="section-title">04 · 총평 및 보완 포인트</div>
+      {% if report.summary %}
       <p class="summary-text">{{ report.summary }}</p>
+      {% else %}
+      <p class="summary-text summary-placeholder">아직 작성된 총평이 없습니다. (구글시트 채점 탭의 "총평" 열에 적어주시면 여기에 표시돼요)</p>
+      {% endif %}
       {% if report.wrong_items %}
       <ul class="wrong-list">
         {% for w in report.wrong_items %}
