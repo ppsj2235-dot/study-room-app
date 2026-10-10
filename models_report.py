@@ -14,6 +14,12 @@
 "회차별 점수 추이" 그래프가 자동으로 그 시험을 포함해서 다시 그려집니다.
 이 로직을 바꾸지 않고 유지해야, 나중에 1학기/2학기 중간/기말 4회를 연결한
 그래프를 그대로 볼 수 있습니다.
+
+[총평] 성적표의 "04 · 총평 및 보완 포인트"는 더 이상 자동 생성하지 않습니다
+(학생 수가 적은 학년이 많아 "응시자 평균" 비교 자체를 성적표에서 뺐기 때문).
+대신 각 학년 채점 탭의 총점(V열) 바로 오른쪽 열에 "총평" 열을 만들어두면,
+관리자가 그 칸에 학생별로 직접 코멘트를 적는 대로 성적표에 그대로 표시됩니다.
+비어 있으면 "아직 작성된 총평이 없습니다" 안내문이 대신 표시됩니다.
 """
 import csv
 import io
@@ -160,7 +166,8 @@ def load_grade_sheet(exam, grade):
             total = float(total_raw)
         except ValueError:
             total = None
-        students.append({"name": name, "answers": answers, "total": total})
+        comment = (row.get("총평") or "").strip()
+        students.append({"name": name, "answers": answers, "total": total, "comment": comment})
     return students
 
 
@@ -205,8 +212,6 @@ def build_report(grade, student_name, exam_id=None):
         return round(sum(1 for v in s["answers"].values() if v) * point_value, 1)
 
     total_score = _student_total(target)
-    class_totals = [_student_total(s) for s in students]
-    class_avg = round(sum(class_totals) / len(class_totals), 1) if class_totals else 0
 
     units = _unit_order(questions)
     unit_stats = []
@@ -217,20 +222,12 @@ def build_report(grade, student_name, exam_id=None):
         student_correct = sum(1 for q in q_nums if target["answers"].get(q))
         student_unit_score = round(student_correct * point_value, 1)
 
-        class_scores = []
-        for s in students:
-            c = sum(1 for q in q_nums if s["answers"].get(q))
-            class_scores.append(c * point_value)
-        unit_avg = round(sum(class_scores) / len(class_scores), 1) if class_scores else 0
-
         unit_stats.append(
             {
                 "name": unit,
                 "score": student_unit_score,
                 "max": unit_max,
-                "avg": unit_avg,
                 "pct": round(student_unit_score / unit_max * 100, 1) if unit_max else 0,
-                "avg_pct": round(unit_avg / unit_max * 100, 1) if unit_max else 0,
             }
         )
 
@@ -240,7 +237,11 @@ def build_report(grade, student_name, exam_id=None):
             info = questions[qnum]
             wrong_items.append({"qnum": qnum, **info})
 
-    summary = _build_summary(total_score, class_avg, unit_stats, wrong_items)
+    # "총평"은 더 이상 자동 생성하지 않고, 구글시트 채점 탭의 "총평" 열에
+    # 관리자가 직접 적은 내용을 그대로 보여줍니다. (평균 비교 문구가
+    # 섞여 있던 자동 생성 총평은 제거했습니다 - 학생 수가 적은 학년에서는
+    # "응시자 평균"이라는 비교 자체가 의미가 없기 때문입니다)
+    summary = target.get("comment") or ""
     trend_points, trend_caption = _build_trend(grade, student_name, exam["exam_id"])
 
     return {
@@ -249,8 +250,6 @@ def build_report(grade, student_name, exam_id=None):
         "grade_label": GRADE_LABELS.get(str(grade), f"{grade}학년"),
         "student_name": student_name,
         "total_score": total_score,
-        "class_avg": class_avg,
-        "diff_vs_avg": round(total_score - class_avg, 1),
         "unit_stats": unit_stats,
         "unit_range": " · ".join(units) if units else "-",
         "wrong_items": wrong_items,
@@ -260,34 +259,6 @@ def build_report(grade, student_name, exam_id=None):
         "trend_points": trend_points,
         "trend_caption": trend_caption,
     }
-
-
-def _build_summary(total_score, class_avg, unit_stats, wrong_items):
-    parts = []
-    if total_score >= class_avg:
-        parts.append(
-            f"이번 시험에서 {total_score:.0f}점을 받아 응시자 평균({class_avg:.0f}점)보다 높은 성취를 보였습니다."
-        )
-    else:
-        parts.append(
-            f"이번 시험에서 {total_score:.0f}점을 받았습니다 (응시자 평균 {class_avg:.0f}점)."
-        )
-
-    strong_units = [u for u in unit_stats if u["pct"] >= 90]
-    weak_units = [u for u in unit_stats if u["pct"] < u["avg_pct"]]
-    if strong_units:
-        parts.append("특히 " + ", ".join(u["name"] for u in strong_units) + " 단원에서 우수한 성취를 보였습니다.")
-    if weak_units:
-        parts.append(", ".join(u["name"] for u in weak_units) + " 단원은 평균보다 다소 낮아 보완이 필요합니다.")
-
-    if wrong_items:
-        confusions = [w["confusion"] for w in wrong_items if w.get("confusion")]
-        if confusions:
-            parts.append("틀린 문항을 살펴보면 " + "; ".join(confusions[:3]) + " 부분에서 혼동이 있었던 것으로 보입니다.")
-    else:
-        parts.append("전 문항을 정확히 풀어내는 꼼꼼함을 보여주었습니다.")
-
-    return " ".join(parts)
 
 
 def _build_trend(grade, student_name, current_exam_id):
