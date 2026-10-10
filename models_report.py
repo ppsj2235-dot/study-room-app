@@ -15,11 +15,12 @@
 이 로직을 바꾸지 않고 유지해야, 나중에 1학기/2학기 중간/기말 4회를 연결한
 그래프를 그대로 볼 수 있습니다.
 
-[총평] 성적표의 "04 · 총평 및 보완 포인트"는 더 이상 자동 생성하지 않습니다
-(학생 수가 적은 학년이 많아 "응시자 평균" 비교 자체를 성적표에서 뺐기 때문).
-대신 각 학년 채점 탭의 총점(V열) 바로 오른쪽 열에 "총평" 열을 만들어두면,
-관리자가 그 칸에 학생별로 직접 코멘트를 적는 대로 성적표에 그대로 표시됩니다.
-비어 있으면 "아직 작성된 총평이 없습니다" 안내문이 대신 표시됩니다.
+[총평] 성적표의 "04 · 총평 및 보완 포인트"는 기본적으로 학생 본인의 결과만 보고
+자동으로 문장을 만들어 보여줍니다(다른 학생과의 "평균 비교"는 더 이상 쓰지
+않습니다 - 학생 수가 적은 학년이 많아 비교 자체가 의미가 없기 때문입니다).
+관리자가 직접 다른 문구로 바꾸고 싶으면, 각 학년 채점 탭의 총점(V열) 바로
+오른쪽 "총평" 열에 원하는 내용을 적으면 자동 생성 문구 대신 그 내용이
+그대로 표시됩니다(수정 후 비워두면 다시 자동 생성 문구로 돌아갑니다).
 """
 import csv
 import io
@@ -27,6 +28,7 @@ import os
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from functools import lru_cache
 
 # 구글시트 "웹에 게시" 링크에 공통으로 들어가는 토큰. 민감한 로그인 정보는
@@ -185,6 +187,36 @@ def _unit_order(questions):
     return seen
 
 
+def _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions):
+    """학생 본인의 이번 시험 결과만 보고 "총평" 문구를 자동으로 만듭니다.
+    (다른 학생/반 평균과 비교하지 않습니다 - 위 [총평] 설명 참고)
+    관리자가 구글시트 "총평" 열에 직접 글을 적으면 이 자동 문구 대신 그 글이
+    쓰입니다.
+    """
+    if not wrong_items:
+        return (
+            f"이번 시험에서 {n_questions}문항을 모두 맞혔어요! "
+            "지금처럼 꾸준히 실력을 유지해주시면 좋겠습니다."
+        )
+
+    weak_units = sorted((u for u in unit_stats if u["pct"] < 100), key=lambda u: u["pct"])
+    unit_part = ""
+    if weak_units:
+        weak_names = " · ".join(u["name"] for u in weak_units[:2])
+        unit_part = f"'{weak_names}' 단원에서 상대적으로 어려움을 보였어요."
+
+    confusion_part = ""
+    confusions = [w["confusion"] for w in wrong_items if w.get("confusion")]
+    if confusions:
+        top_confusion = Counter(confusions).most_common(1)[0][0]
+        confusion_part = f' 특히 "{top_confusion}" 부분을 집에서 한 번 더 짚어보면 좋겠습니다.'
+
+    return (
+        f"총 {n_questions}문항 중 {correct_count}문항을 맞혔습니다 "
+        f"({total_score:.0f}점). {unit_part}{confusion_part}"
+    ).strip()
+
+
 def build_report(grade, student_name, exam_id=None):
     """한 학생의 성적표에 필요한 모든 집계 데이터를 반환합니다.
 
@@ -237,11 +269,16 @@ def build_report(grade, student_name, exam_id=None):
             info = questions[qnum]
             wrong_items.append({"qnum": qnum, **info})
 
-    # "총평"은 더 이상 자동 생성하지 않고, 구글시트 채점 탭의 "총평" 열에
-    # 관리자가 직접 적은 내용을 그대로 보여줍니다. (평균 비교 문구가
-    # 섞여 있던 자동 생성 총평은 제거했습니다 - 학생 수가 적은 학년에서는
-    # "응시자 평균"이라는 비교 자체가 의미가 없기 때문입니다)
-    summary = target.get("comment") or ""
+    correct_count = n_questions - len(wrong_items)
+
+    # "총평"은 기본적으로 학생 본인 결과 기준으로 자동 생성됩니다. 구글시트
+    # 채점 탭의 "총평" 열에 관리자가 직접 글을 적어두면 그 글이 자동 생성
+    # 문구 대신 쓰입니다(평균 비교 문구는 쓰지 않습니다 - 위 [총평] 설명 참고).
+    manual_comment = (target.get("comment") or "").strip()
+    if manual_comment:
+        summary = manual_comment
+    else:
+        summary = _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions)
     trend_points, trend_caption = _build_trend(grade, student_name, exam["exam_id"])
 
     return {
@@ -253,7 +290,7 @@ def build_report(grade, student_name, exam_id=None):
         "unit_stats": unit_stats,
         "unit_range": " · ".join(units) if units else "-",
         "wrong_items": wrong_items,
-        "correct_count": n_questions - len(wrong_items),
+        "correct_count": correct_count,
         "total_questions": n_questions,
         "summary": summary,
         "trend_points": trend_points,
