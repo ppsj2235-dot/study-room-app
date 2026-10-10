@@ -672,6 +672,15 @@ def scores_delete(score_id):
 # 학부모에게 카카오톡 등으로 개별 전달하는 방식이라, 학부모 화면/로그인은
 # 따로 만들지 않습니다.
 # ---------------------------------------------------------------------------
+@app.route("/admin/reports/refresh", methods=["POST"])
+@admin_required
+def reports_refresh():
+    check_csrf()
+    rpt.clear_cache()
+    flash("구글시트 최신 자료를 다시 불러왔습니다.", "success")
+    exam_id = request.form.get("exam")
+    return redirect(url_for("reports_list", exam=exam_id) if exam_id else url_for("reports_list"))
+
 @app.route("/admin/reports")
 @admin_required
 def reports_list():

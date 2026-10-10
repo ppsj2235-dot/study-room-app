@@ -18,6 +18,7 @@
 import csv
 import io
 import os
+import time
 import urllib.error
 import urllib.request
 from functools import lru_cache
@@ -53,9 +54,13 @@ EXAMS = [
 
 
 def _csv_url(gid):
+    # 캐시 무력화용 타임스탬프를 매번 붙입니다. 구글이 "웹에 게시" CSV를
+    # 몇 분간 캐싱해서 내보내는 경우가 있어서, URL을 매 요청마다 조금씩
+    # 다르게 만들어야 방금 구글시트에서 수정한 내용이 바로 반영됩니다.
+    cache_bust = int(time.time() * 1000)
     return (
         f"https://docs.google.com/spreadsheets/d/e/{GSHEET_PUB_TOKEN}"
-        f"/pub?gid={gid}&single=true&output=csv"
+        f"/pub?gid={gid}&single=true&output=csv&_cb={cache_bust}"
     )
 
 
@@ -63,7 +68,14 @@ def _fetch_csv(gid, timeout=10):
     if not GSHEET_PUB_TOKEN:
         return []
     url = _csv_url(gid)
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8-sig")
@@ -110,6 +122,14 @@ def _load_questions_cached(exam_id, questions_gid):
 def load_questions(exam, grade):
     by_grade = _load_questions_cached(exam["exam_id"], exam["questions_gid"])
     return by_grade.get(str(grade), {})
+
+
+def clear_cache():
+    """문항정보 캐시를 비웁니다. 관리자가 "최신 자료 새로고침" 버튼을 누르면
+    호출되어, 구글시트의 문항정보 탭을 수정한 내용도 즉시 반영되게 합니다.
+    (채점 결과/총점은 애초에 캐시하지 않고 매번 새로 읽어오므로 영향 없음)
+    """
+    _load_questions_cached.cache_clear()
 
 
 def load_grade_sheet(exam, grade):
