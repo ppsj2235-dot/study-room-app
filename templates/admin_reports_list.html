@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}성적표 관리 - {{ academy_name }}{% endblock %}
+{% block content %}
+<div class="nl-header-row">
+<h1 class="page-title">성적표 (학습 평가표)</h1>
+<div class="nl-header-actions">
+<a class="btn" href="{{ url_for('admin_dashboard') }}">관리자 홈으로</a>
+</div>
+</div>
+<p class="muted" style="margin-top:-8px;">
+구글시트에서 채점한 결과를 바탕으로 학생별 성적표 이미지를 만듭니다. "이미지로 다운로드"로 받은 파일을 카카오톡 등으로 학부모님께 개별 전달해주세요. (학부모 로그인 화면에는 따로 표시되지 않습니다)
+</p>
+
+{% if exam %}
+<p class="muted">현재 시험 : <strong>{{ exam.label }} ({{ exam.round_label }})</strong>{% if exam.exam_date %} · 응시일 {{ exam.exam_date }}{% endif %}</p>
+{% else %}
+<div class="empty-state">
+<div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
+<div>아직 등록된 시험이 없습니다. 구글시트에 문항정보/채점 탭을 만들고 코드에 시험 정보를 등록해주세요.</div>
+</div>
+{% endif %}
+
+{% for g in grades_data %}
+<section class="card">
+<h2>{{ g.label }}</h2>
+{% if g.students %}
+<table class="table">
+<thead>
+<tr>
+<th>학생</th>
+<th>미리보기</th>
+<th>다운로드</th>
+</tr>
+</thead>
+<tbody>
+{% for name in g.students %}
+<tr>
+<td>{{ name }}</td>
+<td><a href="{{ url_for('report_preview', grade=g.grade, student_name=name) }}" target="_blank" rel="noopener">미리보기</a></td>
+<td><a class="btn btn-small btn-primary" href="{{ url_for('report_download', grade=g.grade, student_name=name) }}">이미지로 다운로드</a></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="muted">아직 이 학년의 시험 자료(문항 체크 결과)가 구글시트에 없습니다.</p>
+{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

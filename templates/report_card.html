@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ report.student_name }} 성적표</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg:            #FAF8F7;
+    --surface:       #FCFAFA;
+    --surface-2:     #FFFFFF;
+    --border:        #EBDED8;
+    --border-soft:   #F0E6E1;
+    --text-primary:  #2b2a28;
+    --text-secondary:#6b6660;
+    --text-muted:    #938d86;
+    --brand-dark:    #526B5B;
+    --brand-pale:    #EEF2EF;
+    --child:         #eb6834;   /* 우리 아이 */
+    --avg:           #2a78d6;   /* 전체 평균 */
+    --good:          #0ca30c;
+    --bad:           #c23b3b;
+    --grid:          #ece3de;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 18px 40px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .card-head {
+    background: var(--brand-dark);
+    color: #fff;
+    padding: 22px 26px 20px;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;
+  }
+  .card-head .school { font-size: 12.5px; opacity: .8; margin-bottom: 4px; letter-spacing: .02em; }
+  .card-head h1 { font-size: 19px; margin: 0; font-weight: 700; }
+  .card-head .meta { font-size: 12.5px; opacity: .85; margin-top: 6px; line-height: 1.6; }
+  .student-pill {
+    background: rgba(255,255,255,.14); border-radius: 12px; padding: 10px 16px; text-align: right;
+  }
+  .student-pill .name { font-size: 16px; font-weight: 700; }
+  .student-pill .sub { font-size: 11.5px; opacity: .8; margin-top: 2px; }
+
+  .section { padding: 24px 26px; border-top: 1px solid var(--border-soft); }
+  .section:first-of-type { border-top: none; }
+  .section-title { font-size: 13.5px; font-weight: 700; color: var(--brand-dark); margin-bottom: 14px; letter-spacing: .01em; }
+
+  /* 총점 비교 */
+  .score-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .score-hero { text-align: center; }
+  .score-hero .num { font-size: 46px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--child); }
+  .score-hero .num span { font-size: 18px; font-weight: 600; color: var(--text-muted); }
+  .score-hero .label { font-size: 12.5px; color: var(--text-secondary); margin-top: 6px; }
+
+  .vs-compare { flex: 1; min-width: 220px; }
+  .vs-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+  .vs-row .lab { display: flex; align-items: center; gap: 7px; color: var(--text-secondary); }
+  .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+  .vs-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .vs-track { height: 12px; background: var(--grid); border-radius: 6px; overflow: hidden; margin-bottom: 14px; }
+  .vs-fill { height: 100%; border-radius: 6px; }
+  .vs-note { font-size: 12px; font-weight: 600; }
+  .vs-note.up { color: var(--good); }
+  .vs-note.down { color: var(--bad); }
+  .vs-note.flat { color: var(--text-secondary); }
+
+  /* 단원별 점수 */
+  .unit-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+  .unit-legend span { display: flex; align-items: center; gap: 6px; }
+  .unit { margin-bottom: 18px; }
+  .unit:last-child { margin-bottom: 0; }
+  .unit-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .unit-name { font-size: 13.5px; font-weight: 600; }
+  .unit-nums { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .unit-bars { display: flex; flex-direction: column; gap: 4px; }
+  .unit-bar-track { height: 9px; background: var(--grid); border-radius: 5px; overflow: hidden; }
+  .unit-bar-fill { height: 100%; border-radius: 5px; }
+
+  /* 추이 그래프 */
+  .trend-wrap { }
+  .trend-svg-box { position: relative; }
+  .trend-caption { font-size: 12px; color: var(--text-secondary); margin-top: 10px; line-height: 1.6; }
+  .trend-caption strong { color: var(--child); }
+
+  /* 총평 */
+  .summary-text { font-size: 13.5px; line-height: 1.75; color: var(--text-primary); margin: 0 0 16px; }
+  .wrong-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .wrong-item {
+    background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px;
+    padding: 10px 14px; font-size: 12.5px; line-height: 1.6;
+  }
+  .wrong-item .q-no { color: var(--child); font-weight: 700; margin-right: 6px; }
+  .wrong-item .q-content { color: var(--text-primary); font-weight: 600; }
+  .wrong-item .q-point { color: var(--text-secondary); margin-top: 2px; }
+  .all-correct { font-size: 13px; color: var(--good); font-weight: 600; }
+
+  .footer-note {
+    padding: 16px 26px 22px;
+    font-size: 12px; color: var(--text-muted); line-height: 1.6; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="school">{{ academy_name }} · 성적표</div>
+        <h1>{{ report.grade }}학년 {{ report.exam.label }} ({{ report.exam.round_label }})</h1>
+        <div class="meta">시험범위 : {{ report.unit_range }}<br>응시일 : {{ report.exam.exam_date or '-' }}</div>
+      </div>
+      <div class="student-pill">
+        <div class="name">{{ report.student_name }} 학생</div>
+        <div class="sub">{{ report.grade }}학년</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">01 · 총점 비교</div>
+      <div class="score-row">
+        <div class="score-hero">
+          <div class="num">{{ '%g'|format(report.total_score) }}<span>/100</span></div>
+          <div class="label">{{ report.student_name }} 학생 점수</div>
+        </div>
+        <div class="vs-compare">
+          <div class="vs-row">
+            <span class="lab"><span class="dot" style="background:var(--child)"></span>{{ report.student_name }} 학생</span>
+            <span class="val">{{ '%g'|format(report.total_score) }}점</span>
+          </div>
+          <div class="vs-track"><div class="vs-fill" style="width:{{ report.total_score }}%; background:var(--child)"></div></div>
+          <div class="vs-row">
+            <span class="lab"><span class="dot" style="background:var(--avg)"></span>같은 시험 응시자 평균</span>
+            <span class="val">{{ '%g'|format(report.class_avg) }}점</span>
+          </div>
+          <div class="vs-track"><div class="vs-fill" style="width:{{ report.class_avg }}%; background:var(--avg)"></div></div>
+          {% if report.diff_vs_avg > 0 %}
+          <div class="vs-note up">▲ 전체 평균보다 {{ '%g'|format(report.diff_vs_avg) }}점 높아요</div>
+          {% elif report.diff_vs_avg < 0 %}
+          <div class="vs-note down">▼ 전체 평균보다 {{ '%g'|format(-report.diff_vs_avg) }}점 낮아요</div>
+          {% else %}
+          <div class="vs-note flat">● 전체 평균과 같아요</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">02 · 문제 유형(단원)별 점수</div>
+      <div class="unit-legend">
+        <span><span class="dot" style="background:var(--child)"></span>{{ report.student_name }} 학생</span>
+        <span><span class="dot" style="background:var(--avg)"></span>응시자 평균</span>
+      </div>
+
+      {% for u in report.unit_stats %}
+      <div class="unit">
+        <div class="unit-top">
+          <span class="unit-name">{{ u.name }}</span>
+          <span class="unit-nums">{{ '%g'|format(u.score) }} / {{ '%g'|format(u.max) }}점 · 평균 {{ '%g'|format(u.avg) }}점</span>
+        </div>
+        <div class="unit-bars">
+          <div class="unit-bar-track"><div class="unit-bar-fill" style="width:{{ u.pct }}%; background:var(--child)"></div></div>
+          <div class="unit-bar-track"><div class="unit-bar-fill" style="width:{{ u.avg_pct }}%; background:var(--avg)"></div></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="section">
+      <div class="section-title">03 · 회차별 점수 추이</div>
+      <div class="trend-wrap">
+        <div class="trend-svg-box">
+          <svg viewBox="0 0 600 190" width="100%" style="display:block; overflow: visible;">
+            <line x1="40" y1="20" x2="580" y2="20" stroke="var(--grid)" stroke-width="1"/>
+            <line x1="40" y1="70" x2="580" y2="70" stroke="var(--grid)" stroke-width="1"/>
+            <line x1="40" y1="120" x2="580" y2="120" stroke="var(--grid)" stroke-width="1"/>
+            <line x1="40" y1="150" x2="580" y2="150" stroke="var(--text-muted)" stroke-width="1"/>
+            <text x="30" y="24" text-anchor="end" font-size="10" fill="#938d86">100</text>
+            <text x="30" y="74" text-anchor="end" font-size="10" fill="#938d86">75</text>
+            <text x="30" y="124" text-anchor="end" font-size="10" fill="#938d86">50</text>
+
+            {% if report.trend_points|length >= 2 %}
+            <polyline points="{{ report.trend_points|map(attribute='svg_point')|join(' ') }}"
+              fill="none" stroke="var(--child)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            {% endif %}
+
+            {% for p in report.trend_points %}
+            {% if loop.last %}
+            <circle cx="{{ p.x }}" cy="{{ p.y }}" r="6" fill="var(--child)" stroke="#fff" stroke-width="2"/>
+            <text x="{{ p.x }}" y="{{ p.y - 15 }}" text-anchor="middle" font-size="13" font-weight="800" fill="var(--child)">{{ '%g'|format(p.score) }}</text>
+            {% else %}
+            <circle cx="{{ p.x }}" cy="{{ p.y }}" r="5" fill="var(--child)"/>
+            <text x="{{ p.x }}" y="{{ p.y - 14 }}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-primary)">{{ '%g'|format(p.score) }}</text>
+            {% endif %}
+            <text x="{{ p.x }}" y="170" text-anchor="middle" font-size="11" fill="#6b6660">{{ p.label }}</text>
+            {% endfor %}
+          </svg>
+        </div>
+        <div class="trend-caption">{{ report.trend_caption }}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">04 · 총평 및 보완 포인트</div>
+      <p class="summary-text">{{ report.summary }}</p>
+      {% if report.wrong_items %}
+      <ul class="wrong-list">
+        {% for w in report.wrong_items %}
+        <li class="wrong-item">
+          <div><span class="q-no">{{ w.qnum }}번</span><span class="q-content">{{ w.content }}</span></div>
+          {% if w.confusion %}<div class="q-point">→ {{ w.confusion }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="all-correct">전 문항 정답 — 완벽해요!</div>
+      {% endif %}
+    </div>
+
+    <div class="footer-note">{{ academy_name }} · 이 리포트는 같은 시험을 응시한 학생들의 데이터를 바탕으로 자동 생성됩니다</div>
+  </div>
+</div>
+</body>
+</html>
