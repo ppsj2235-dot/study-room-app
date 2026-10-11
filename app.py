@@ -718,6 +718,36 @@ def report_preview(grade, student_name):
     resp = make_response(render_report_html(report, ACADEMY_NAME))
     return _no_store(resp)
 
+@app.route("/admin/reports/<grade>/<student_name>/comment", methods=["GET", "POST"])
+@admin_required
+def report_comment_edit(grade, student_name):
+    exam_id = request.values.get("exam")
+    exam = rpt.get_exam(exam_id) if exam_id else rpt.latest_exam()
+    if not exam:
+        abort(404)
+    if request.method == "POST":
+        check_csrf()
+        if request.form.get("action") == "reset":
+            rpt.set_comment_override(exam["exam_id"], grade, student_name, "", updated_by=g.user.id)
+            flash("총평을 자동 생성 문구로 되돌렸습니다.", "success")
+        else:
+            rpt.set_comment_override(
+                exam["exam_id"], grade, student_name, request.form.get("comment", ""), updated_by=g.user.id
+            )
+            flash("총평을 저장했습니다.", "success")
+        return redirect(url_for("reports_list", exam=exam["exam_id"]))
+    report = rpt.build_report(grade, student_name, exam_id=exam["exam_id"])
+    if not report:
+        abort(404)
+    resp = make_response(render_template(
+        "admin_report_comment_edit.html",
+        report=report,
+        exam=exam,
+        grade=grade,
+        student_name=student_name,
+    ))
+    return _no_store(resp)
+
 @app.route("/admin/reports/<grade>/<student_name>/download")
 @admin_required
 def report_download(grade, student_name):

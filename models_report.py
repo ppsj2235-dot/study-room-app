@@ -15,12 +15,14 @@
 이 로직을 바꾸지 않고 유지해야, 나중에 1학기/2학기 중간/기말 4회를 연결한
 그래프를 그대로 볼 수 있습니다.
 
-[총평] 성적표의 "04 · 총평 및 보완 포인트"는 기본적으로 학생 본인의 결과만 보고
-자동으로 문장을 만들어 보여줍니다(다른 학생과의 "평균 비교"는 더 이상 쓰지
-않습니다 - 학생 수가 적은 학년이 많아 비교 자체가 의미가 없기 때문입니다).
-관리자가 직접 다른 문구로 바꾸고 싶으면, 각 학년 채점 탭의 총점(V열) 바로
-오른쪽 "총평" 열에 원하는 내용을 적으면 자동 생성 문구 대신 그 내용이
-그대로 표시됩니다(수정 후 비워두면 다시 자동 생성 문구로 돌아갑니다).
+[총평] 성적표의 "04 · 총평 및 보완 포인트"는 기본적으로 학생 본인의 결과(오답 단원,
+혼동 포인트)만 보고 자동으로 문장을 만들어 보여줍니다(다른 학생과의 "평균 비교"는
+쓰지 않습니다 - 학생 수가 적은 학년이 많아 비교 자체가 의미가 없기 때문입니다).
+관리자가 문구를 직접 고치고 싶으면 홈페이지 성적표 관리 화면에서 "총평 수정"으로
+들어가 고쳐 쓸 수 있고, 그 내용은 DB(report_comments 테이블)에 저장되어 자동 생성
+문구 대신 표시됩니다. 수정 화면에서 비워서 저장하면 다시 자동 생성 문구로
+돌아갑니다. (예전에는 구글시트 "총평" 열에 적는 방식이었지만, 수정 경로를 홈페이지
+하나로 통일하면서 구글시트 쪽은 더 이상 읽지 않습니다)
 """
 import csv
 import io
@@ -30,6 +32,8 @@ import urllib.error
 import urllib.request
 from collections import Counter
 from functools import lru_cache
+
+from db import db_cursor
 
 # 구글시트 "웹에 게시" 링크에 공통으로 들어가는 토큰. 민감한 로그인 정보는
 # 아니지만(링크를 아는 사람만 열람 가능한 수준), 공개 저장소 코드에 그대로
@@ -168,8 +172,7 @@ def load_grade_sheet(exam, grade):
             total = float(total_raw)
         except ValueError:
             total = None
-        comment = (row.get("총평") or "").strip()
-        students.append({"name": name, "answers": answers, "total": total, "comment": comment})
+        students.append({"name": name, "answers": answers, "total": total})
     return students
 
 
@@ -188,10 +191,11 @@ def _unit_order(questions):
 
 
 def _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions):
-    """학생 본인의 이번 시험 결과만 보고 "총평" 문구를 자동으로 만듭니다.
-    (다른 학생/반 평균과 비교하지 않습니다 - 위 [총평] 설명 참고)
-    관리자가 구글시트 "총평" 열에 직접 글을 적으면 이 자동 문구 대신 그 글이
-    쓰입니다.
+    """학생 본인의 이번 시험 결과(오답 단원 · 혼동 포인트)만 보고 "총평" 문구를
+    자동으로 만듭니다 (다른 학생/반 평균과 비교하지 않습니다 - 위 [총평] 설명
+    참고). "집에서 연습하라"는 안내가 아니라, 공부방에서 앞으로 어떻게 보충
+    지도할지를 알려주는 톤으로 씁니다. 관리자가 홈페이지에서 직접 고쳐 쓰면
+    이 자동 문구 대신 그 내용이 쓰입니다.
     """
     if not wrong_items:
         return (
@@ -200,21 +204,55 @@ def _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questio
         )
 
     weak_units = sorted((u for u in unit_stats if u["pct"] < 100), key=lambda u: u["pct"])
-    unit_part = ""
-    if weak_units:
-        weak_names = " · ".join(u["name"] for u in weak_units[:2])
-        unit_part = f"'{weak_names}' 단원에서 상대적으로 어려움을 보였어요."
+    weak_names = " · ".join(u["name"] for u in weak_units[:2]) if weak_units else ""
 
-    confusion_part = ""
     confusions = [w["confusion"] for w in wrong_items if w.get("confusion")]
-    if confusions:
-        top_confusion = Counter(confusions).most_common(1)[0][0]
-        confusion_part = f' 특히 "{top_confusion}" 부분을 집에서 한 번 더 짚어보면 좋겠습니다.'
+    top_confusion = Counter(confusions).most_common(1)[0][0] if confusions else ""
 
-    return (
-        f"총 {n_questions}문항 중 {correct_count}문항을 맞혔습니다 "
-        f"({total_score:.0f}점). {unit_part}{confusion_part}"
-    ).strip()
+    if weak_names and top_confusion:
+        plan = (
+            f"'{weak_names}' 단원에서 \"{top_confusion}\" 패턴의 실수가 반복되고 있어, "
+            "다음 보충 수업에서 이 부분을 집중적으로 다뤄보겠습니다."
+        )
+    elif weak_names:
+        plan = f"'{weak_names}' 단원 위주로 다음 보충 수업에서 복습을 진행하겠습니다."
+    else:
+        plan = "틀린 문항들을 다음 보충 수업에서 다시 짚어보겠습니다."
+
+    return f"총 {n_questions}문항 중 {correct_count}문항을 맞혔습니다 ({total_score:.0f}점). {plan}"
+
+
+def get_comment_override(exam_id, grade, student_name):
+    """관리자가 홈페이지에서 직접 고쳐 쓴 총평이 있으면 반환하고, 없으면 None."""
+    with db_cursor() as cur:
+        cur.execute(
+            "SELECT comment FROM report_comments WHERE exam_id = ? AND grade = ? AND student_name = ?",
+            (exam_id, str(grade), student_name),
+        )
+        row = cur.fetchone()
+        return row["comment"] if row else None
+
+
+def set_comment_override(exam_id, grade, student_name, comment, updated_by=None):
+    """관리자가 홈페이지에서 총평을 저장합니다. 빈 문자열로 저장하면 override를
+    지워서 다시 자동 생성 문구로 돌아갑니다."""
+    comment = (comment or "").strip()
+    with db_cursor(commit=True) as cur:
+        if not comment:
+            cur.execute(
+                "DELETE FROM report_comments WHERE exam_id = ? AND grade = ? AND student_name = ?",
+                (exam_id, str(grade), student_name),
+            )
+            return
+        cur.execute(
+            """
+            INSERT INTO report_comments (exam_id, grade, student_name, comment, updated_by, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(exam_id, grade, student_name)
+            DO UPDATE SET comment = excluded.comment, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP
+            """,
+            (exam_id, str(grade), student_name, comment, updated_by),
+        )
 
 
 def build_report(grade, student_name, exam_id=None):
@@ -271,14 +309,12 @@ def build_report(grade, student_name, exam_id=None):
 
     correct_count = n_questions - len(wrong_items)
 
-    # "총평"은 기본적으로 학생 본인 결과 기준으로 자동 생성됩니다. 구글시트
-    # 채점 탭의 "총평" 열에 관리자가 직접 글을 적어두면 그 글이 자동 생성
-    # 문구 대신 쓰입니다(평균 비교 문구는 쓰지 않습니다 - 위 [총평] 설명 참고).
-    manual_comment = (target.get("comment") or "").strip()
-    if manual_comment:
-        summary = manual_comment
-    else:
-        summary = _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions)
+    # "총평"은 기본적으로 학생 본인 결과 기준으로 자동 생성됩니다. 관리자가
+    # 홈페이지에서 직접 고쳐 쓴 내용(DB)이 있으면 그 내용이 자동 생성 문구
+    # 대신 쓰입니다 - 위 [총평] 설명 참고.
+    override = get_comment_override(exam["exam_id"], grade, student_name)
+    auto_summary = _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions)
+    summary = override if override else auto_summary
     trend_points, trend_caption = _build_trend(grade, student_name, exam["exam_id"])
 
     return {
@@ -293,6 +329,8 @@ def build_report(grade, student_name, exam_id=None):
         "correct_count": correct_count,
         "total_questions": n_questions,
         "summary": summary,
+        "auto_summary": auto_summary,
+        "summary_is_manual": bool(override),
         "trend_points": trend_points,
         "trend_caption": trend_caption,
     }
