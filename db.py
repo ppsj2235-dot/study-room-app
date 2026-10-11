@@ -228,3 +228,23 @@ def init_db():
             )
             """
         )
+
+
+        # 성적표 "04 · 총평 및 보완 포인트" 수동 수정본 - 관리자가 홈페이지에서 직접
+        # 고쳐 쓴 총평이 있으면 자동 생성 문구 대신 이 테이블의 내용을 보여줍니다.
+        # (exam_id + grade + student_name 조합마다 하나씩, 비어 있으면 자동 생성으로 돌아갑니다)
+        cur.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS report_comments (
+                id {_PK},
+                exam_id TEXT NOT NULL,
+                grade TEXT NOT NULL,
+                student_name TEXT NOT NULL,
+                comment TEXT NOT NULL,
+                updated_by INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(exam_id, grade, student_name)
+            )
+            """
+        )
