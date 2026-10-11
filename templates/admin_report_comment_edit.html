@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}총평 수정 - {{ academy_name }}{% endblock %}
+{% block content %}
+<div class="nl-header-row">
+<h1 class="page-title">{{ report.student_name }} 학생 총평 수정</h1>
+<div class="nl-header-actions">
+<a class="btn" href="{{ url_for('reports_list', exam=exam.exam_id) }}">목록으로</a>
+</div>
+</div>
+<p class="muted" style="margin-top:-8px;">{{ report.grade }}학년 · {{ exam.label }} ({{ exam.round_label }})</p>
+
+<section class="card">
+<form method="post" class="form-grid">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+<label style="grid-column:1 / -1;">총평 내용
+<textarea name="comment" rows="6">{{ report.summary }}</textarea>
+</label>
+<div style="grid-column:1 / -1; display:flex; gap:10px;">
+<button type="submit" name="action" value="save" class="btn btn-primary">저장하기</button>
+<button type="submit" name="action" value="reset" class="btn">자동 생성 문구로 되돌리기</button>
+</div>
+</form>
+</section>
+
+<p class="muted">
+{% if report.summary_is_manual %}
+현재 위 칸에는 관리자가 직접 수정한 총평이 표시되고 있어요. 자동 생성 문구는 참고용으로 아래와 같아요.<br />
+<em>{{ report.auto_summary }}</em>
+{% else %}
+지금은 오답을 바탕으로 자동 생성된 총평이 표시되고 있어요. 위 칸에서 내용을 고쳐서 저장하면 그 내용이 성적표에 대신 표시되고, "자동 생성 문구로 되돌리기"를 누르면 다시 자동 생성 문구로 돌아갑니다.
+{% endif %}
+</p>
+{% endblock %}

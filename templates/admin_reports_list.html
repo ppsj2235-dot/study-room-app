@@ -38,6 +38,7 @@
 <tr>
 <th>학생</th>
 <th>미리보기</th>
+<th>총평</th>
 <th>다운로드</th>
 </tr>
 </thead>
@@ -46,6 +47,7 @@
 <tr>
 <td>{{ name }}</td>
 <td><a href="{{ url_for('report_preview', grade=g.grade, student_name=name) }}" target="_blank" rel="noopener">미리보기</a></td>
+<td><a href="{{ url_for('report_comment_edit', grade=g.grade, student_name=name) }}">총평 수정</a></td>
 <td><a class="btn btn-small btn-primary" href="{{ url_for('report_download', grade=g.grade, student_name=name) }}">이미지로 다운로드</a></td>
 </tr>
 {% endfor %}
