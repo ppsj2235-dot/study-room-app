@@ -202,15 +202,27 @@ def _has_batchim(text):
 
 
 def _complete_sentence(text):
-    """구글시트 '혼동포인트' 칸에 "못함"처럼 짧게 줄여 적은 메모를, 자동 생성
-    총평 문장 안에 그대로 끼워 넣으면 "못함" 패턴처럼 말이 어색하게 잘린다.
-    간추리지 않고 정중하게 끝맺는 완전한 문장(예: "못함" -> "못하였습니다")으로
-    바꿔서 돌려준다."""
+    """구글시트 '혼동포인트' 칸에 "부족", "못함", "실수"처럼 뚝 잘라 적은 메모를
+    자동 생성 총평 문장 안에 그대로 끼워 넣으면 말이 어색하게 잘린다. 자주 쓰는
+    표현은 아래처럼 정중하고 완결된 문장으로 바꿔서 돌려준다.
+        부족 -> ~부족합니다
+        못함 -> ~어려워합니다 (예: "자리값 계산을 못함" -> "자리값 계산을 어려워합니다")
+        실수 -> ~실수하였습니다
+        혼동 -> ~혼동하였습니다
+    목록에 없는 다른 짧은 메모는 일반적인 규칙으로 문장을 완성한다."""
     text = (text or "").strip()
     if not text:
         return text
-    if text.endswith(("습니다", "어요", "아요", "네요", "군요", "했어요")):
+    if text.endswith(("습니다", "합니다", "입니다", "어요", "아요", "네요", "군요", "했어요", "예요", "이에요")):
         return text
+    if text.endswith("부족"):
+        return text + "합니다"
+    if text.endswith("못함"):
+        return text[:-2] + "어려워합니다"
+    if text.endswith("실수"):
+        return text + "하였습니다"
+    if text.endswith("혼동"):
+        return text + "하였습니다"
     if text.endswith("함"):
         return text[:-1] + "하였습니다"
     particle = "이" if _has_batchim(text) else "가"
@@ -333,7 +345,13 @@ def build_report(grade, student_name, exam_id=None):
     for qnum in sorted(questions.keys()):
         if not target["answers"].get(qnum):
             info = questions[qnum]
-            wrong_items.append({"qnum": qnum, **info})
+            # 구글시트 혼동포인트 칸의 "부족"/"못함"/"실수" 같은 축약 메모를
+            # 성적표에 보여줄 때는 정중하고 완결된 문장으로 바꿔서 쓴다.
+            wrong_items.append({
+                "qnum": qnum,
+                **info,
+                "confusion": _complete_sentence(info.get("confusion", "")),
+            })
 
     correct_count = n_questions - len(wrong_items)
 
