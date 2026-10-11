@@ -27,6 +27,7 @@
 import csv
 import io
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -190,6 +191,32 @@ def _unit_order(questions):
     return seen
 
 
+def _has_batchim(text):
+    """문자열 마지막 글자에 받침이 있는지 (이/가 같은 조사를 고르기 위함)."""
+    if not text:
+        return False
+    code = ord(text[-1]) - 0xAC00
+    if code < 0 or code > 11171:
+        return False
+    return (code % 28) != 0
+
+
+def _complete_sentence(text):
+    """구글시트 '혼동포인트' 칸에 "못함"처럼 짧게 줄여 적은 메모를, 자동 생성
+    총평 문장 안에 그대로 끼워 넣으면 "못함" 패턴처럼 말이 어색하게 잘린다.
+    간추리지 않고 정중하게 끝맺는 완전한 문장(예: "못함" -> "못하였습니다")으로
+    바꿔서 돌려준다."""
+    text = (text or "").strip()
+    if not text:
+        return text
+    if text.endswith(("습니다", "어요", "아요", "네요", "군요", "했어요")):
+        return text
+    if text.endswith("함"):
+        return text[:-1] + "하였습니다"
+    particle = "이" if _has_batchim(text) else "가"
+    return f"{text}{particle} 있었습니다"
+
+
 def _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions):
     """학생 본인의 이번 시험 결과(오답 단원 · 혼동 포인트)만 보고 "총평" 문구를
     자동으로 만듭니다 (다른 학생/반 평균과 비교하지 않습니다 - 위 [총평] 설명
@@ -210,8 +237,9 @@ def _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questio
     top_confusion = Counter(confusions).most_common(1)[0][0] if confusions else ""
 
     if weak_names and top_confusion:
+        confusion_full = _complete_sentence(top_confusion)
         plan = (
-            f"'{weak_names}' 단원에서 \"{top_confusion}\" 패턴의 실수가 반복되고 있어, "
+            f"'{weak_names}' 단원에서 {confusion_full}. "
             "다음 보충 수업에서 이 부분을 집중적으로 다뤄보겠습니다."
         )
     elif weak_names:
