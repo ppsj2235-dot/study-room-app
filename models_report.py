@@ -362,7 +362,7 @@ def build_report(grade, student_name, exam_id=None):
     override = get_comment_override(exam["exam_id"], grade, student_name)
     auto_summary = _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions)
     summary = override if override else auto_summary
-    trend_points, trend_caption = _build_trend(grade, student_name, exam["exam_id"])
+    trend_points, trend_caption = _build_trend(grade, student_name, exam["exam_id"], current_students=students)
 
     return {
         "exam": exam,
@@ -383,10 +383,17 @@ def build_report(grade, student_name, exam_id=None):
     }
 
 
-def _build_trend(grade, student_name, current_exam_id):
+def _build_trend(grade, student_name, current_exam_id, current_students=None):
+    # 같은 시험(현재 조회 중인 회차)은 구글시트를 다시 요청하지 않고, 01·총점을 계산할 때
+    # 이미 받아온 students 목록을 그대로 재사용합니다. 매번 새로 요청하면 구글시트 쪽
+    # 자체 캐시(파일 위쪽 설명에 적어둔 몇 분 지연 이슈) 때문에, 아주 드물게 01 총점과
+    # 03 추이 그래프의 점수가 같은 화면 안에서도 서로 다르게 보일 수 있었습니다.
     raw_points = []
     for exam in EXAMS:
-        students = load_grade_sheet(exam, grade)
+        if exam["exam_id"] == current_exam_id and current_students is not None:
+            students = current_students
+        else:
+            students = load_grade_sheet(exam, grade)
         s = next((x for x in students if x["name"] == student_name), None)
         if not s:
             continue
