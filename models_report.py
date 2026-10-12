@@ -317,8 +317,9 @@ def build_report(grade, student_name, exam_id=None):
     point_value = 100 / n_questions if n_questions else 0
 
     def _student_total(s):
-        if s["total"] is not None:
-            return s["total"]
+        # 총점은 항상 문항 체크박스를 기준으로 다시 계산합니다. 구글시트 "총점" 칸에
+        # 남아있는 숫자는 더 이상 쓰지 않습니다 - 체크박스를 고쳤는데 총점 칸을 깜빡
+        # 하고 안 고치면 01 총점과 02 단원별 점수가 서로 어긋나는 문제가 있었습니다.
         return round(sum(1 for v in s["answers"].values() if v) * point_value, 1)
 
     total_score = _student_total(target)
@@ -392,9 +393,8 @@ def _build_trend(grade, student_name, current_exam_id):
         questions = load_questions(exam, grade)
         n_questions = len(questions) or 20
         point_value = 100 / n_questions
-        total = s["total"]
-        if total is None:
-            total = sum(1 for v in s["answers"].values() if v) * point_value
+        # 회차별 점수 추이도 총점과 동일하게 체크박스 기준으로 다시 계산합니다.
+        total = sum(1 for v in s["answers"].values() if v) * point_value
         raw_points.append(
             {
                 "exam_id": exam["exam_id"],
