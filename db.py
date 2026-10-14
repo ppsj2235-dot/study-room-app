@@ -248,3 +248,23 @@ def init_db():
             )
             """
         )
+
+
+        # 성적표 "02 · 문제 유형(단원)별 점수"에 단원마다 표시되는 문제 유형 설명 수동 수정본 - 관리자가 홈페이지에서 직접
+        # 고친 설명이 있으면 구글시트 자동 생성 문구 대신 이 테이블의 내용을 보여줍니다.
+        # (exam_id + grade + unit 조합마다 하나씩, 비어 있으면 자동 생성으로 돌아갑니다)
+        cur.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS unit_type_notes (
+                id {_PK},
+                exam_id TEXT NOT NULL,
+                grade TEXT NOT NULL,
+                unit TEXT NOT NULL,
+                note TEXT NOT NULL,
+                updated_by INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(exam_id, grade, unit)
+            )
+            """
+        )
