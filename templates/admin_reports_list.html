@@ -31,7 +31,7 @@
 
 {% for g in grades_data %}
 <section class="card">
-<h2>{{ g.label }}</h2>
+<h2>{{ g.label }} <a class="btn btn-small" style="margin-left:8px;" href="{{ url_for('report_unit_types_edit', grade=g.grade) }}">문제 유형 수정</a></h2>
 {% if g.students %}
 <table class="table">
 <thead>
