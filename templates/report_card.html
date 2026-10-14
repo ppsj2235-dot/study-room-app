@@ -96,7 +96,7 @@
   .trend-caption strong { color: var(--child); }
 
   /* 총평 */
-  .summary-text { font-size: 13.5px; line-height: 1.75; color: var(--text-primary); margin: 0 0 16px; }
+  .summary-text { font-size: 13.5px; line-height: 1.75; color: var(--text-primary); margin: 16px 0 0; }
   .wrong-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
   .wrong-item {
     background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px;
@@ -203,7 +203,6 @@
 
     <div class="section">
       <div class="section-title">04 · 총평 및 보완 포인트</div>
-      <p class="summary-text">{{ report.summary }}</p>
       {% if report.wrong_items %}
       <ul class="wrong-list">
         {% for w in report.wrong_items %}
@@ -216,6 +215,7 @@
       {% else %}
       <div class="all-correct">전 문항 정답 — 완벽해요!</div>
       {% endif %}
+      <p class="summary-text">{{ report.summary }}</p>
     </div>
 
     <div class="footer-note">{{ academy_name }} · 이 리포트는 같은 시험을 응시한 학생들의 데이터를 바탕으로 자동 생성됩니다</div>
