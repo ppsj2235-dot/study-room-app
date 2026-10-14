@@ -748,6 +748,35 @@ def report_comment_edit(grade, student_name):
     ))
     return _no_store(resp)
 
+@app.route("/admin/reports/<grade>/unit-types", methods=["GET", "POST"])
+@admin_required
+def report_unit_types_edit(grade):
+    exam_id = request.values.get("exam")
+    exam = rpt.get_exam(exam_id) if exam_id else rpt.latest_exam()
+    if not exam:
+        abort(404)
+    if request.method == "POST":
+        check_csrf()
+        i = 0
+        while True:
+            unit = request.form.get(f"unit_{i}")
+            if unit is None:
+                break
+            note = request.form.get(f"note_{i}", "")
+            rpt.set_unit_type_override(exam["exam_id"], grade, unit, note, updated_by=g.user.id)
+            i += 1
+        flash("단원별 문제 유형 설명을 저장했습니다.", "success")
+        return redirect(url_for("reports_list", exam=exam["exam_id"]))
+    unit_rows = rpt.list_unit_overview(exam, grade)
+    resp = make_response(render_template(
+        "admin_unit_types_edit.html",
+        grade=grade,
+        grade_label=rpt.GRADE_LABELS.get(grade, grade),
+        exam=exam,
+        unit_rows=unit_rows,
+    ))
+    return _no_store(resp)
+
 @app.route("/admin/reports/<grade>/<student_name>/download")
 @admin_required
 def report_download(grade, student_name):
