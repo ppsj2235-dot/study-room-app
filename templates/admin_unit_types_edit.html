@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}문제 유형 수정 - {{ academy_name }}{% endblock %}
+{% block content %}
+<div class="nl-header-row">
+<h1 class="page-title">{{ grade_label }} 문제 유형 수정</h1>
+<div class="nl-header-actions">
+<a class="btn" href="{{ url_for('reports_list', exam=exam.exam_id) }}">목록으로</a>
+</div>
+</div>
+<p class="muted" style="margin-top:-8px;">{{ exam.label }} ({{ exam.round_label }}) · "02 · 문제 유형(단원)별 점수"에 단원마다 표시되는 간단한 문제 유형 설명입니다. 비워두면 구글시트 '문항정보' 탭의 평가내용을 모아 자동으로 보여줍니다.</p>
+
+<section class="card">
+<form method="post" class="form-grid">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+{% for u in unit_rows %}
+<input type="hidden" name="unit_{{ loop.index0 }}" value="{{ u.name }}" />
+<label style="grid-column:1 / -1;">{{ u.name }}
+<textarea name="note_{{ loop.index0 }}" rows="2" placeholder="{{ u.auto_types }}">{{ u.override }}</textarea>
+</label>
+{% if u.is_manual %}
+<p class="muted" style="grid-column:1 / -1; margin-top:-8px;">현재 직접 수정한 설명이 표시되고 있어요. 자동 생성: <em>{{ u.auto_types }}</em></p>
+{% endif %}
+{% endfor %}
+<div style="grid-column:1 / -1; display:flex; gap:10px;">
+<button type="submit" class="btn btn-primary">저장하기</button>
+</div>
+</form>
+</section>
+{% endblock %}
