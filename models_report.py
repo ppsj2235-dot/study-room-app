@@ -295,6 +295,61 @@ def set_comment_override(exam_id, grade, student_name, comment, updated_by=None)
         )
 
 
+def get_unit_type_override(exam_id, grade, unit):
+    """관리자가 홈페이지에서 직접 고쳐 쓴 단원별 문제 유형 설명이 있으면 반환하고, 없으면 None."""
+    with db_cursor() as cur:
+        cur.execute(
+            "SELECT note FROM unit_type_notes WHERE exam_id = ? AND grade = ? AND unit = ?",
+            (exam_id, str(grade), unit),
+        )
+        row = cur.fetchone()
+        return row["note"] if row else None
+
+
+def set_unit_type_override(exam_id, grade, unit, note, updated_by=None):
+    """관리자가 홈페이지에서 단원별 문제 유형 설명을 저장합니다. 빈 문자열로 저장하면
+    override를 지워서 다시 자동 생성 문구로 돌아갑니다."""
+    note = (note or "").strip()
+    with db_cursor(commit=True) as cur:
+        if not note:
+            cur.execute(
+                "DELETE FROM unit_type_notes WHERE exam_id = ? AND grade = ? AND unit = ?",
+                (exam_id, str(grade), unit),
+            )
+            return
+        cur.execute(
+            """
+            INSERT INTO unit_type_notes (exam_id, grade, unit, note, updated_by, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(exam_id, grade, unit)
+            DO UPDATE SET note = excluded.note, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP
+            """,
+            (exam_id, str(grade), unit, note, updated_by),
+        )
+
+
+def list_unit_overview(exam, grade):
+    """단원별 문제 유형 수정 페이지에서 쓸, 단원 목록과 자동 생성 문구/수동 수정본을 반환합니다."""
+    questions = load_questions(exam, grade)
+    units = _unit_order(questions)
+    rows = []
+    for unit in units:
+        q_nums = sorted(q for q, info in questions.items() if info["unit"] == unit)
+        auto_types = " · ".join(
+            questions[q]["content"] for q in q_nums if questions[q].get("content")
+        )
+        override = get_unit_type_override(exam["exam_id"], grade, unit) or ""
+        rows.append(
+            {
+                "name": unit,
+                "auto_types": auto_types,
+                "override": override,
+                "is_manual": bool(override),
+            }
+        )
+    return rows
+
+
 def build_report(grade, student_name, exam_id=None):
     """한 학생의 성적표에 필요한 모든 집계 데이터를 반환합니다.
 
@@ -333,12 +388,20 @@ def build_report(grade, student_name, exam_id=None):
         student_correct = sum(1 for q in q_nums if target["answers"].get(q))
         student_unit_score = round(student_correct * point_value, 1)
 
+        auto_types = " · ".join(
+            questions[q]["content"] for q in sorted(q_nums) if questions[q].get("content")
+        )
+        types_override = get_unit_type_override(exam["exam_id"], grade, unit)
+
         unit_stats.append(
             {
                 "name": unit,
                 "score": student_unit_score,
                 "max": unit_max,
                 "pct": round(student_unit_score / unit_max * 100, 1) if unit_max else 0,
+                "types": types_override if types_override else auto_types,
+                "auto_types": auto_types,
+                "types_is_manual": bool(types_override),
             }
         )
 
