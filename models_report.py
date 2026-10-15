@@ -419,6 +419,30 @@ def build_report(grade, student_name, exam_id=None):
 
     correct_count = n_questions - len(wrong_items)
 
+    question_rows = []
+    for qnum in sorted(questions.keys()):
+        info = questions[qnum]
+        question_rows.append({
+            "qnum": qnum,
+            "unit": info.get("unit", ""),
+            "content": info.get("content", ""),
+            "difficulty": info.get("difficulty", ""),
+            "domain": info.get("domain", ""),
+            "correct": bool(target["answers"].get(qnum)),
+        })
+
+    _diff_order = ["하", "중", "중상", "상"]
+    diff_achievement = []
+    for _d in _diff_order:
+        _d_qnums = [q for q, info in questions.items() if info.get("difficulty") == _d]
+        if not _d_qnums:
+            continue
+        _d_correct = sum(1 for q in _d_qnums if target["answers"].get(q))
+        diff_achievement.append({
+            "label": _d,
+            "pct": round(_d_correct / len(_d_qnums) * 100),
+        })
+
     # "총평"은 기본적으로 학생 본인 결과 기준으로 자동 생성됩니다. 관리자가
     # 홈페이지에서 직접 고쳐 쓴 내용(DB)이 있으면 그 내용이 자동 생성 문구
     # 대신 쓰입니다 - 위 [총평] 설명 참고.
@@ -443,6 +467,8 @@ def build_report(grade, student_name, exam_id=None):
         "summary_is_manual": bool(override),
         "trend_points": trend_points,
         "trend_caption": trend_caption,
+        "question_rows": question_rows,
+        "diff_achievement": diff_achievement,
     }
 
 
