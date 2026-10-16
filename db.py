@@ -249,6 +249,22 @@ def init_db():
             """
         )
 
+        # 성적표 상단 제목 수동 수정본 - 관리자가 홈페이지에서 시험별로 직접 입력한 제목이
+        # 있으면 성적표 상단 제목과 "회차별 성적" 그래프의 해당 회차 라벨에 모두 이 값을
+        # 사용합니다. (exam_id마다 하나씩, 비어 있으면 자동으로 기본 제목/회차명으로 돌아갑니다)
+        cur.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS exam_titles (
+                id {_PK},
+                exam_id TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                updated_by INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
 
         # 성적표 "02 · 문제 유형(단원)별 점수"에 단원마다 표시되는 문제 유형 설명 수동 수정본 - 관리자가 홈페이지에서 직접
         # 고친 설명이 있으면 구글시트 자동 생성 문구 대신 이 테이블의 내용을 보여줍니다.
