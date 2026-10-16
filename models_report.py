@@ -295,6 +295,39 @@ def set_comment_override(exam_id, grade, student_name, comment, updated_by=None)
         )
 
 
+def get_title_override(exam_id):
+    """관리자가 홈페이지에서 직접 입력한 성적표 제목이 있으면 반환하고, 없으면 None."""
+    with db_cursor() as cur:
+        cur.execute(
+            "SELECT title FROM exam_titles WHERE exam_id = ?",
+            (exam_id,),
+        )
+        row = cur.fetchone()
+        return row["title"] if row else None
+
+
+def set_title_override(exam_id, title, updated_by=None):
+    """관리자가 홈페이지에서 시험별 성적표 제목을 저장합니다. 빈 문자열로 저장하면
+    override를 지워서 다시 기본 제목("단원평가 분석표")과 기본 회차명으로 돌아갑니다."""
+    title = (title or "").strip()
+    with db_cursor(commit=True) as cur:
+        if not title:
+            cur.execute(
+                "DELETE FROM exam_titles WHERE exam_id = ?",
+                (exam_id,),
+            )
+            return
+        cur.execute(
+            """
+            INSERT INTO exam_titles (exam_id, title, updated_by, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(exam_id)
+            DO UPDATE SET title = excluded.title, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP
+            """,
+            (exam_id, title, updated_by),
+        )
+
+
 def get_unit_type_override(exam_id, grade, unit):
     """관리자가 홈페이지에서 직접 고쳐 쓴 단원별 문제 유형 설명이 있으면 반환하고, 없으면 None."""
     with db_cursor() as cur:
@@ -450,9 +483,11 @@ def build_report(grade, student_name, exam_id=None):
     auto_summary = _auto_comment(total_score, unit_stats, wrong_items, correct_count, n_questions)
     summary = override if override else auto_summary
     trend_points, trend_caption = _build_trend(grade, student_name, exam["exam_id"], current_students=students)
+    report_title = get_title_override(exam["exam_id"]) or "단원평가 분석표"
 
     return {
         "exam": exam,
+        "report_title": report_title,
         "grade": grade,
         "grade_label": GRADE_LABELS.get(str(grade), f"{grade}학년"),
         "student_name": student_name,
@@ -494,7 +529,7 @@ def _build_trend(grade, student_name, current_exam_id, current_students=None):
         raw_points.append(
             {
                 "exam_id": exam["exam_id"],
-                "label": exam.get("round_label") or exam["label"],
+                "label": get_title_override(exam["exam_id"]) or exam.get("round_label") or exam["label"],
                 "exam_date": exam.get("exam_date"),
                 "score": round(total, 1),
             }
