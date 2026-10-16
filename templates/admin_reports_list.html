@@ -21,7 +21,17 @@
 </p>
 
 {% if exam %}
-<p class="muted">현재 시험 : <strong>{{ exam.label }} ({{ exam.round_label }})</strong>{% if exam.exam_date %} · 응시일 {{ exam.exam_date }}{% endif %} · <a href="{{ url_for('report_title_edit', exam=exam.exam_id) }}">성적표 제목 수정</a></p>
+<p class="muted">
+현재 시험 :
+<form method="get" action="{{ url_for('reports_list') }}" style="display:inline-block;">
+<select name="exam" onchange="this.form.submit()" style="width:auto; display:inline; font-weight:700; color:var(--text); border-bottom:1px solid var(--border-input); padding:2px 4px;">
+{% for e in exams|reverse %}
+<option value="{{ e.exam_id }}" {% if exam.exam_id == e.exam_id %}selected{% endif %}>{{ e.label }} ({{ e.round_label }}){% if e.exam_date %} · {{ e.exam_date }}{% endif %}</option>
+{% endfor %}
+</select>
+</form>
+{% if exam.exam_date %} · 응시일 {{ exam.exam_date }}{% endif %} · <a href="{{ url_for('report_title_edit', exam=exam.exam_id) }}">성적표 제목 수정</a>
+</p>
 {% else %}
 <div class="empty-state">
 <div class="ic-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
