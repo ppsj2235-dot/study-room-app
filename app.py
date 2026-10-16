@@ -748,6 +748,30 @@ def report_comment_edit(grade, student_name):
     ))
     return _no_store(resp)
 
+@app.route("/admin/reports/title", methods=["GET", "POST"])
+@admin_required
+def report_title_edit():
+    exam_id = request.values.get("exam")
+    exam = rpt.get_exam(exam_id) if exam_id else rpt.latest_exam()
+    if not exam:
+        abort(404)
+    if request.method == "POST":
+        check_csrf()
+        if request.form.get("action") == "reset":
+            rpt.set_title_override(exam["exam_id"], "", updated_by=g.user.id)
+            flash("성적표 제목을 기본값으로 되돌렸습니다.", "success")
+        else:
+            rpt.set_title_override(exam["exam_id"], request.form.get("title", ""), updated_by=g.user.id)
+            flash("성적표 제목을 저장했습니다.", "success")
+        return redirect(url_for("reports_list", exam=exam["exam_id"]))
+    current_title = rpt.get_title_override(exam["exam_id"]) or ""
+    resp = make_response(render_template(
+        "admin_report_title_edit.html",
+        exam=exam,
+        current_title=current_title,
+    ))
+    return _no_store(resp)
+
 @app.route("/admin/reports/<grade>/unit-types", methods=["GET", "POST"])
 @admin_required
 def report_unit_types_edit(grade):
