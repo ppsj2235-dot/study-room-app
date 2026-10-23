@@ -24,7 +24,7 @@
   }
   html, body {
     width: 1024px;
-    height: 1420px;
+    height: 1200px;
     background: var(--c-bg);
   }
   body {
@@ -35,7 +35,7 @@
   .page {
     position: relative;
     width: 1024px;
-    height: 1420px;
+    height: 1200px;
     background: var(--c-bg);
     overflow: hidden;
   }
@@ -114,6 +114,11 @@
   }
   .cal-day.open { background: var(--c-positive); }
   .cal-day.closed { background: var(--c-negative); }
+  .cal-day.trailing {
+    background: repeating-linear-gradient(135deg, var(--c-positive), var(--c-positive) 4px, var(--c-positive-light) 4px, var(--c-positive-light) 8px);
+    border: 2px dashed var(--c-dark);
+    color: var(--c-dark);
+  }
   .cal-legend { display: flex; align-items: center; gap: 22px; margin-top: 14px; font-size: 13px; color: #6b7267; }
   .cal-legend .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
   .dot.open { background: var(--c-positive); }
@@ -155,16 +160,15 @@
   .qr-box img { height: 175px; width: auto; max-width: 220px; border-radius: 6px; display: block; }
 
   /* ---------- Row 2: growth points (가정에서 부탁드립니다와 동일한 가로 배치) ---------- */
-  #card-growth { left: 20px; top: 793px; width: 984px; height: 190px; display: flex; flex-direction: column; }
+  #card-growth { left: 20px; top: 793px; width: 483px; height: 210px; display: flex; flex-direction: column; }
   #card-growth .card-head { flex: 0 0 auto; }
-  .growth-cols { flex: 1; display: flex; align-items: center; padding: 0 24px 10px; gap: 18px; }
+  .growth-cols { flex: 1; display: flex; align-items: center; padding: 0 20px 10px; gap: 16px; }
 
   /* ---------- Row 3: home requests ---------- */
-  #card-home { left: 20px; top: 1003px; width: 984px; height: 200px; display: flex; flex-direction: column; }
+  #card-home { left: 521px; top: 793px; width: 483px; height: 210px; display: flex; flex-direction: column; }
   #card-home .card-head { flex: 0 0 auto; }
-  .home-cols { flex: 1; display: flex; align-items: center; padding: 0 210px 10px 24px; gap: 6px; }
+  .home-cols { flex: 1; display: flex; align-items: center; padding: 0 20px 10px; gap: 16px; }
   .home-col { flex: 1; min-width: 0; padding-right: 10px; }
-  .home-illust { position: absolute; right: 22px; top: 50%; transform: translateY(-42%); width: 168px; height: 150px; }
   .home-col .icon-line { width: 30px; height: 30px; margin-bottom: 8px; }
   .home-col .h-title { font-size: 14.5px; font-weight: 800; color: #1c2a1c; margin-bottom: 6px; }
   .home-col .h-desc { font-size: 12px; color: #5b6154; line-height: 1.5; }
@@ -172,7 +176,7 @@
   /* growth-cols도 home-col과 동일한 아이템 스타일을 그대로 사용합니다. */
 
   /* ---------- Row 4: contact ---------- */
-  #card-contact { left: 20px; top: 1223px; width: 984px; height: 110px; }
+  #card-contact { left: 20px; top: 1023px; width: 984px; height: 110px; }
   .mini-header {
     height: 40px; border-radius: 18px 18px 0 0; background: var(--c-dark);
     color: var(--c-bg); display: flex; align-items: center; justify-content: center;
@@ -184,11 +188,15 @@
   .contact-right { font-size: 12.5px; color: #5b6154; line-height: 1.65; flex: 1; }
 
   /* ---------- Footer ---------- */
-  .footer-bar {
-    position: absolute; left: 20px; right: 20px; top: 1353px; height: 34px;
-    background: var(--c-dark); border-radius: 10px;
-    color: var(--c-bg); font-size: 13.5px; font-weight: 600;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
+  .footer-deco {
+    position: absolute; left: 40px; right: 40px; top: 1153px; height: 1px;
+    background: var(--c-border);
+  }
+  .footer-deco .mark {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--c-card-bg); border: 1.5px solid var(--c-border);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
   }
 </style>
 </head>
@@ -229,7 +237,7 @@
           {% set week_row = loop.index + 1 %}
           {% for cell in week %}
             {% if cell %}
-            <div class="cal-day {{ cell.status }}"
+            <div class="cal-day {{ cell.status }}{{ ' trailing' if cell.is_trailing else '' }}"
                  style="grid-column: {{ loop.index }}; grid-row: {{ week_row }};">
               {{ cell.day }}
             </div>
@@ -240,6 +248,7 @@
       <div class="cal-legend">
         <div><span class="dot open"></span>운영하는 날</div>
         <div><span class="dot closed"></span>운영하지 않는 날 (금·토·일)</div>
+        <div><span class="dot" style="background: repeating-linear-gradient(135deg, var(--c-positive), var(--c-positive) 2px, var(--c-positive-light) 2px, var(--c-positive-light) 4px); border: 1.5px dashed var(--c-dark);"></span>마지막 수업일(다음달로 이어짐)</div>
       </div>
     </div>
   </div>
@@ -302,7 +311,7 @@
       <h2>성장 포인트</h2>
     </div>
     <div class="growth-cols">
-      {% for item in growth_items %}
+      {% for item in growth_items[:2] %}
       <div class="home-col">
         <div class="icon-line">{{ growth_icons[loop.index0]|safe }}</div>
         <div class="h-title">{{ item.title }}</div>
@@ -319,7 +328,7 @@
       <h2>가정에서 부탁드립니다</h2>
     </div>
     <div class="home-cols">
-      {% for item in home_items %}
+      {% for item in home_items[:2] %}
       <div class="home-col">
         <div class="icon-line">{{ home_icons[loop.index0]|safe }}</div>
         <div class="h-title">{{ item.title }}</div>
@@ -327,7 +336,6 @@
       </div>
       {% endfor %}
     </div>
-    <img class="home-illust" src="{{ illust_backpack }}" />
   </div>
 
   <!-- Card 6: Contact -->
@@ -342,9 +350,7 @@
     </div>
   </div>
 
-  <div class="footer-bar">
-    &#127807; {{ tagline }} {{ academy_name }}이 함께하겠습니다. &#127807;
-  </div>
+  <div class="footer-deco"><div class="mark">&#127807;</div></div>
 </div>
 </body>
 </html>
