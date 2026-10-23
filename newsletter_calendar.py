@@ -66,6 +66,14 @@ def build_calendar(year, month, extra_closed_days=None, extra_open_days=None):
     # 단, 모든 값이 None인 주만 있다면 제거
     weeks = [w for w in weeks if any(cell is not None for cell in w)]
 
+    # 그 달의 마지막 날이 혼자 새 주로 넘어가 있으면(같은 주에 다른 날짜가 없으면)
+    # 알림장에서 "다음달 수업으로 이어지는 날"로 다르게 표시할 수 있도록 표시해둔다.
+    if weeks:
+        last_week = weeks[-1]
+        non_empty = [cell for cell in last_week if cell is not None]
+        if len(non_empty) == 1 and non_empty[0]["day"] == month_days:
+            non_empty[0]["is_trailing"] = True
+
     return {
         "weeks": weeks,
         "weekday_labels": WEEKDAY_LABELS,
