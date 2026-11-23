@@ -114,6 +114,9 @@
   }
   .cal-day.open { background: var(--c-positive); }
   .cal-day.closed { background: var(--c-negative); }
+  .cal-day.vacation { background: #E9A23B; }
+  .cal-day .stack { display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+  .cal-day .stack small { font-size: 9.5px; font-weight: 500; }
   .cal-day.trailing {
     background: repeating-linear-gradient(135deg, var(--c-positive), var(--c-positive) 4px, var(--c-positive-light) 4px, var(--c-positive-light) 8px);
     border: 2px dashed var(--c-dark);
@@ -124,6 +127,7 @@
   .cal-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; flex-shrink: 0; }
   .dot.open { background: var(--c-positive); }
   .dot.closed { background: var(--c-negative); }
+  .dot.vacation { background: #E9A23B; }
 
   /* ---------- Notice card ---------- */
   #card-notice { left: 390px; top: 305px; width: 340px; height: 468px; display: flex; flex-direction: column; }
@@ -241,7 +245,13 @@
             {% if cell %}
             <div class="cal-day {{ cell.status }}{{ ' trailing' if cell.is_trailing else '' }}"
                  style="grid-column: {{ loop.index }}; grid-row: {{ week_row }};">
-              {{ cell.day }}
+              {% if cell.is_leading %}
+                <span class="stack"><small>{{ cell.from_month }}월</small>{{ cell.day }}</span>
+              {% elif cell.status == 'vacation' %}
+                <span class="stack">{{ cell.day }}<small>방학</small></span>
+              {% else %}
+                {{ cell.day }}
+              {% endif %}
             </div>
             {% endif %}
           {% endfor %}
@@ -251,6 +261,7 @@
         <div><span class="dot open"></span>운영하는 날</div>
         <div><span class="dot closed"></span>운영하지 않는 날 (금·토·일)</div>
         <div><span class="dot" style="background: repeating-linear-gradient(135deg, var(--c-positive), var(--c-positive) 2px, var(--c-positive-light) 2px, var(--c-positive-light) 4px); border: 1.5px dashed var(--c-dark);"></span>다음달로 이어지는 날</div>
+        {% if vacation_range %}<div><span class="dot vacation"></span>방학 ({{ vacation_range }})</div>{% endif %}
       </div>
     </div>
   </div>
