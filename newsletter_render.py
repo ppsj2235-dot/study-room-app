@@ -180,6 +180,7 @@ def render_flyer_html(newsletter):
         month,
         extra_closed_days=newsletter.get("extra_closed_days"),
         extra_open_days=newsletter.get("extra_open_days"),
+        vacation_days=newsletter.get("vacation_days"),
     )
 
     qr_data_uri = newsletter.get("tuition", {}).get("qr_image_data")
@@ -196,6 +197,7 @@ def render_flyer_html(newsletter):
         "tagline": newsletter.get("tagline", "기초부터 탄탄하게, 끝까지 함께."),
         "weekday_labels": cal["weekday_labels"],
         "weeks": cal["weeks"],
+        "vacation_range": cal["vacation_range"],
         "notices": newsletter.get("notices") or ["원장님이 여기에 공지사항을 입력해주세요."],
         "tuition": {
             "period": newsletter.get("tuition", {}).get("period", ""),
