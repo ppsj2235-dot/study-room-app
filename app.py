@@ -28,6 +28,7 @@ import models_report as rpt
 import models_scores as scores
 from content_bank import suggest_director_message, suggest_quote
 from db import init_db
+from newsletter_calendar import parse_day_ranges
 from newsletter_render import render_flyer_html, render_flyer_png, THEME_ASSETS
 from newsletter_themes import DEFAULT_THEME, THEMES, theme_choices
 from report_render import render_report_html, render_report_png
@@ -304,6 +305,7 @@ def _parse_newsletter_form(form, existing_qr_data=None):
         },
         "extra_closed_days": nl.parse_day_list(form.get("extra_closed_days", "")),
         "extra_open_days": nl.parse_day_list(form.get("extra_open_days", "")),
+        "vacation_days": parse_day_ranges(form.get("vacation_days", "")),
     }
     return data
 
