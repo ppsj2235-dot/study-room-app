@@ -35,7 +35,20 @@ def build_calendar(year, month, extra_closed_days=None, extra_open_days=None):
     for d in cal.itermonthdates(year, month):
         in_month = d.month == month
         if not in_month:
-            week.append(None)
+            # 이전 달의 마지막 날이 월요일이면(이전 달 알림장에서 "다음달 수업으로 이어지는 날"로 표시되는 날)
+            # 이번 달 첫 주 월요일 칸에 운영일로 함께 넣는다. 예) 11/30(월) -> 12월 달력 첫째 주 월요일
+            first_day = date(year, month, 1)
+            if d.weekday() == 0 and (first_day - d).days == 1:
+                week.append(
+                    {
+                        "day": d.day,
+                        "status": "closed" if d in holidays else "open",
+                        "holiday_name": holidays.get(d),
+                        "is_leading": True,
+                    }
+                )
+            else:
+                week.append(None)
         else:
             is_holiday = d in holidays
             weekday = d.weekday()
