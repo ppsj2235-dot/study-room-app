@@ -111,6 +111,9 @@
       <label>추가로 운영 처리할 날짜 <span class="optional">(쉼표로 구분)</span>
         <input type="text" name="extra_open_days" value="{{ newsletter.extra_open_days|join(', ') }}" />
       </label>
+      <label>방학 기간 <span class="optional">(주황색 "방학"으로 표시, 예: 28~31 또는 5, 12~14)</span>
+        <input type="text" name="vacation_days" placeholder="예: 28~31" value="{{ newsletter.vacation_days|default([], true) | join(', ') }}" />
+      </label>
     </div>
   </section>
 
